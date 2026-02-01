@@ -1,0 +1,19 @@
+{
+  "name": "kanban-board",
+  "version": "1.0.0",
+  "description": "Jira-style Kanban Board built with SolidJS",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "solid-js": "^1.8.0",
+    "@solidjs/router": "^0.10.0"
+  },
+  "devDependencies": {
+    "vite": "^5.0.0",
+    "vite-plugin-solid": "^2.8.0"
+  }
+}
