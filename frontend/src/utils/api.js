@@ -97,22 +97,35 @@ export const boardApi = {
             description: boardData.description || '',
             tags: boardData.tags || [],
             createdAt: new Date().toISOString(),
-            _id: generateId() // Ensure compatibility if mixing id/_id
+            _id: generateId()
         };
-        // Fix ID consistency
         newBoard.id = newBoard._id;
 
         data.boards.push(newBoard);
 
-        // Create default columns
-        const defaultColumns = [
-            { id: generateId(), title: 'To Do', boardId: newBoard.id, order: 0, color: 'var(--column-todo)', _id: generateId() },
-            { id: generateId(), title: 'In Progress', boardId: newBoard.id, order: 1, color: 'var(--column-progress)', _id: generateId() },
-            { id: generateId(), title: 'Done', boardId: newBoard.id, order: 2, color: 'var(--column-done)', _id: generateId() }
-        ];
-        defaultColumns.forEach(c => { c.id = c._id; }); // Sync IDs
+        // Use custom columns if provided, otherwise create defaults
+        let columnsToCreate;
+        if (boardData.columns && boardData.columns.length > 0) {
+            columnsToCreate = boardData.columns.map((col, index) => ({
+                id: generateId(),
+                _id: generateId(),
+                title: col.title,
+                boardId: newBoard.id,
+                order: index,
+                color: col.color || 'var(--column-todo)'
+            }));
+            columnsToCreate.forEach(c => { c.id = c._id; });
+        } else {
+            // Default columns
+            columnsToCreate = [
+                { id: generateId(), title: 'To Do', boardId: newBoard.id, order: 0, color: 'var(--column-todo)', _id: generateId() },
+                { id: generateId(), title: 'In Progress', boardId: newBoard.id, order: 1, color: 'var(--column-progress)', _id: generateId() },
+                { id: generateId(), title: 'Done', boardId: newBoard.id, order: 2, color: 'var(--column-done)', _id: generateId() }
+            ];
+            columnsToCreate.forEach(c => { c.id = c._id; });
+        }
 
-        data.columns.push(...defaultColumns);
+        data.columns.push(...columnsToCreate);
         saveData(data);
         return newBoard;
     },
@@ -123,6 +136,72 @@ export const boardApi = {
         const index = data.boards.findIndex(b => b.id === id || b._id === id);
         if (index === -1) throw new Error('Board not found');
         data.boards.splice(index, 1);
+        saveData(data);
+        return { success: true };
+    }
+};
+
+// --- Column API ---
+export const columnApi = {
+    create: async (columnData) => {
+        await delay();
+        const data = getData();
+
+        // Find max order for the board
+        const boardColumns = data.columns.filter(c => c.boardId === columnData.boardId);
+        const maxOrder = boardColumns.length > 0
+            ? Math.max(...boardColumns.map(c => c.order)) + 1
+            : 0;
+
+        const newColumn = {
+            id: generateId(),
+            _id: generateId(),
+            title: columnData.title,
+            boardId: columnData.boardId,
+            order: columnData.order ?? maxOrder,
+            color: columnData.color || 'var(--column-todo)'
+        };
+        newColumn.id = newColumn._id;
+
+        data.columns.push(newColumn);
+        saveData(data);
+        return newColumn;
+    },
+
+    update: async (id, updates) => {
+        await delay();
+        const data = getData();
+        const index = data.columns.findIndex(c => c.id === id || c._id === id);
+        if (index === -1) throw new Error('Column not found');
+
+        data.columns[index] = { ...data.columns[index], ...updates };
+        saveData(data);
+        return data.columns[index];
+    },
+
+    delete: async (id, moveTasksToColumnId = null) => {
+        await delay();
+        const data = getData();
+        const columnIndex = data.columns.findIndex(c => c.id === id || c._id === id);
+        if (columnIndex === -1) throw new Error('Column not found');
+
+        const column = data.columns[columnIndex];
+
+        // Handle tasks in the column
+        if (moveTasksToColumnId) {
+            // Move tasks to another column
+            data.tasks.forEach(task => {
+                if (task.columnId === id || task.columnId === column._id) {
+                    task.columnId = moveTasksToColumnId;
+                }
+            });
+        } else {
+            // Delete tasks in this column
+            data.tasks = data.tasks.filter(t => t.columnId !== id && t.columnId !== column._id);
+        }
+
+        // Remove the column
+        data.columns.splice(columnIndex, 1);
         saveData(data);
         return { success: true };
     }

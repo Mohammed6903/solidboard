@@ -1,9 +1,29 @@
-import { createSignal, createEffect, For, createMemo } from 'solid-js';
+import { createSignal, createEffect, For, Show, createMemo, Index } from 'solid-js';
 import { useNavigate } from '@solidjs/router';
 import { boardsState, setBoards } from '../store/kanbanStore';
 import { boardApi } from '../utils/api';
 import { Button } from '../components/common';
 import '../styles/pages/boards-list.css';
+
+// Column presets
+const COLUMN_PRESETS = {
+    kanban: [
+        { title: 'To Do', color: 'var(--column-todo)' },
+        { title: 'In Progress', color: 'var(--column-progress)' },
+        { title: 'Done', color: 'var(--column-done)' }
+    ],
+    scrum: [
+        { title: 'Backlog', color: 'var(--column-todo)' },
+        { title: 'Sprint', color: 'var(--column-todo)' },
+        { title: 'In Progress', color: 'var(--column-progress)' },
+        { title: 'Review', color: 'var(--column-review)' },
+        { title: 'Done', color: 'var(--column-done)' }
+    ],
+    simple: [
+        { title: 'Tasks', color: 'var(--column-todo)' },
+        { title: 'Completed', color: 'var(--column-done)' }
+    ]
+};
 
 export default function BoardsListPage() {
     const navigate = useNavigate();
@@ -11,6 +31,11 @@ export default function BoardsListPage() {
     const [newBoardTitle, setNewBoardTitle] = createSignal('');
     const [newBoardTags, setNewBoardTags] = createSignal('');
     const [isCreating, setIsCreating] = createSignal(false);
+
+    // Column customization state
+    const [selectedPreset, setSelectedPreset] = createSignal('kanban');
+    const [customColumns, setCustomColumns] = createSignal([]);
+    const [showCustomEditor, setShowCustomEditor] = createSignal(false);
 
     // Filter state
     const [searchQuery, setSearchQuery] = createSignal('');
@@ -36,19 +61,47 @@ export default function BoardsListPage() {
         setIsCreating(true);
         try {
             const tags = newBoardTags().split(',').map(t => t.trim()).filter(Boolean);
+
+            // Get columns based on selection
+            let columns;
+            if (showCustomEditor() && customColumns().length > 0) {
+                columns = customColumns();
+            } else {
+                columns = COLUMN_PRESETS[selectedPreset()];
+            }
+
             const newBoard = await boardApi.create({
                 title: newBoardTitle(),
-                tags: tags
+                tags: tags,
+                columns: columns
             });
             setBoards([...boardsState.boards, newBoard]);
             setNewBoardTitle('');
             setNewBoardTags('');
+            setSelectedPreset('kanban');
+            setCustomColumns([]);
+            setShowCustomEditor(false);
             navigate(`/board/${newBoard._id}`);
         } catch (err) {
             console.error("Failed to create board", err);
         } finally {
             setIsCreating(false);
         }
+    };
+
+    // Column management helpers
+    const addCustomColumn = () => {
+        setCustomColumns([...customColumns(), { title: '', color: 'var(--column-todo)' }]);
+    };
+
+    const updateCustomColumn = (index, field, value) => {
+        const updated = [...customColumns()];
+        updated[index] = { ...updated[index], [field]: value };
+        setCustomColumns(updated);
+    };
+
+    const removeCustomColumn = (index) => {
+        setCustomColumns(customColumns().filter((_, i) => i !== index));
     };
 
     const handleDeleteBoard = async (e, boardId) => {
@@ -157,6 +210,104 @@ export default function BoardsListPage() {
                                 class="board-input"
                                 disabled={isCreating()}
                             />
+
+                            {/* Column Preset Selector */}
+                            <div class="column-preset-section">
+                                <label class="preset-label">Columns</label>
+                                <div class="preset-buttons">
+                                    <button
+                                        type="button"
+                                        class={`preset-btn ${selectedPreset() === 'simple' && !showCustomEditor() ? 'preset-btn--active' : ''}`}
+                                        onClick={() => { setSelectedPreset('simple'); setShowCustomEditor(false); }}
+                                    >
+                                        Simple (2)
+                                    </button>
+                                    <button
+                                        type="button"
+                                        class={`preset-btn ${selectedPreset() === 'kanban' && !showCustomEditor() ? 'preset-btn--active' : ''}`}
+                                        onClick={() => { setSelectedPreset('kanban'); setShowCustomEditor(false); }}
+                                    >
+                                        Kanban (3)
+                                    </button>
+                                    <button
+                                        type="button"
+                                        class={`preset-btn ${selectedPreset() === 'scrum' && !showCustomEditor() ? 'preset-btn--active' : ''}`}
+                                        onClick={() => { setSelectedPreset('scrum'); setShowCustomEditor(false); }}
+                                    >
+                                        Scrum (5)
+                                    </button>
+                                    <button
+                                        type="button"
+                                        class={`preset-btn ${showCustomEditor() ? 'preset-btn--active' : ''}`}
+                                        onClick={() => {
+                                            setShowCustomEditor(true);
+                                            if (customColumns().length === 0) {
+                                                setCustomColumns([{ title: '', color: 'var(--column-todo)' }]);
+                                            }
+                                        }}
+                                    >
+                                        Custom
+                                    </button>
+                                </div>
+
+                                {/* Preview selected columns */}
+                                <Show when={!showCustomEditor()}>
+                                    <div class="preset-preview">
+                                        <For each={COLUMN_PRESETS[selectedPreset()]}>
+                                            {(col) => (
+                                                <span class="preset-column" style={{ 'border-left-color': col.color }}>
+                                                    {col.title}
+                                                </span>
+                                            )}
+                                        </For>
+                                    </div>
+                                </Show>
+
+                                {/* Custom Column Editor */}
+                                <Show when={showCustomEditor()}>
+                                    <div class="custom-columns-editor">
+                                        <Index each={customColumns()}>
+                                            {(col, index) => (
+                                                <div class="custom-column-row">
+                                                    <input
+                                                        type="text"
+                                                        value={col().title}
+                                                        onInput={(e) => updateCustomColumn(index, 'title', e.target.value)}
+                                                        placeholder={`Column ${index + 1}`}
+                                                        class="custom-column-input"
+                                                    />
+                                                    <select
+                                                        value={col().color}
+                                                        onChange={(e) => updateCustomColumn(index, 'color', e.target.value)}
+                                                        class="custom-column-color"
+                                                    >
+                                                        <option value="var(--column-todo)">Blue</option>
+                                                        <option value="var(--column-progress)">Yellow</option>
+                                                        <option value="var(--column-review)">Purple</option>
+                                                        <option value="var(--column-done)">Green</option>
+                                                    </select>
+                                                    <button
+                                                        type="button"
+                                                        class="custom-column-remove"
+                                                        onClick={() => removeCustomColumn(index)}
+                                                        disabled={customColumns().length <= 1}
+                                                    >
+                                                        ×
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </Index>
+                                        <button
+                                            type="button"
+                                            class="add-column-btn"
+                                            onClick={addCustomColumn}
+                                        >
+                                            + Add Column
+                                        </button>
+                                    </div>
+                                </Show>
+                            </div>
+
                             <Button type="submit" disabled={isCreating() || !newBoardTitle().trim()}>
                                 {isCreating() ? 'Creating...' : 'Create Board'}
                             </Button>

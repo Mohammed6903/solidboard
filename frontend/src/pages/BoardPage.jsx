@@ -1,8 +1,8 @@
-import { createSignal, onMount, Show, For, createEffect, createMemo } from 'solid-js';
+import { createSignal, onMount, Show, For, createEffect, createMemo, Index } from 'solid-js';
 import { useNavigate, useParams } from '@solidjs/router';
 import { Button } from '../components/common';
 import { currentUser, logout } from '../store/authStore';
-import { boardApi, taskApi, tagApi } from '../utils/api';
+import { boardApi, taskApi, tagApi, columnApi } from '../utils/api';
 import { announce } from '../utils/accessibility';
 import { getDragState } from '../utils/dragAndDrop';
 import { TaskCard } from '../components/TaskCard/TaskCard';
@@ -35,6 +35,12 @@ export default function BoardPage() {
     const [savingTask, setSavingTask] = createSignal(false);
 
     let taskInputRef;
+
+    // Column management state
+    const [editingColumnId, setEditingColumnId] = createSignal(null);
+    const [editingColumnTitle, setEditingColumnTitle] = createSignal('');
+    const [showAddColumn, setShowAddColumn] = createSignal(false);
+    const [newColumnTitle, setNewColumnTitle] = createSignal('');
 
     // Load board and tasks based on route param
     const loadBoardData = async () => {
@@ -257,6 +263,101 @@ export default function BoardPage() {
         }
     };
 
+    // Column management handlers
+    const handleAddColumn = async () => {
+        if (!newColumnTitle().trim() || !board()) return;
+
+        try {
+            const newColumn = await columnApi.create({
+                title: newColumnTitle().trim(),
+                boardId: board().id || board()._id,
+                color: 'var(--column-todo)'
+            });
+
+            // Update local board state
+            setBoard({
+                ...board(),
+                columns: [...(board().columns || []), newColumn]
+            });
+
+            setNewColumnTitle('');
+            setShowAddColumn(false);
+            announce(`Column "${newColumn.title}" added`);
+        } catch (err) {
+            console.error('Failed to add column:', err);
+        }
+    };
+
+    const startEditingColumn = (column) => {
+        setEditingColumnId(column.id || column._id);
+        setEditingColumnTitle(column.title);
+    };
+
+    const handleRenameColumn = async (columnId) => {
+        const newTitle = editingColumnTitle().trim();
+        if (!newTitle) {
+            // Cancel editing if empty
+            setEditingColumnId(null);
+            setEditingColumnTitle('');
+            return;
+        }
+
+        // Clear edit mode first
+        setEditingColumnId(null);
+        setEditingColumnTitle('');
+
+        try {
+            await columnApi.update(columnId, { title: newTitle });
+
+            // Update local board state with the captured title
+            setBoard({
+                ...board(),
+                columns: board().columns.map(col =>
+                    (col.id === columnId || col._id === columnId)
+                        ? { ...col, title: newTitle }
+                        : col
+                )
+            });
+        } catch (err) {
+            console.error('Failed to rename column:', err);
+            // Reload to get correct state on error
+            loadBoardData();
+        }
+    };
+
+    const handleDeleteColumn = async (columnId) => {
+        const column = board()?.columns.find(c => c.id === columnId || c._id === columnId);
+        const tasksInColumn = getColumnTasks(columnId);
+        console.log("Hello")
+
+
+        let confirmMessage = `Delete column "${column?.title}"?`;
+        if (tasksInColumn.length > 0) {
+            confirmMessage += ` This will also delete ${tasksInColumn.length} task(s).`;
+        }
+
+        if (!confirm(confirmMessage)) return;
+
+        try {
+            await columnApi.delete(columnId);
+            console.log("Hello")
+
+
+            // Update local state
+            setBoard({
+                ...board(),
+                columns: board().columns.filter(col => col.id !== columnId && col._id !== columnId)
+            });
+
+            // Remove tasks from this column
+            setTasks(tasks().filter(t => t.columnId !== columnId));
+
+            announce(`Column "${column?.title}" deleted`);
+        } catch (err) {
+            console.error('Failed to delete column:', err);
+        }
+    };
+
     const user = currentUser();
 
     const getPriorityColor = (priority) => {
@@ -312,9 +413,13 @@ export default function BoardPage() {
             {/* Header */}
             <header class="board-header glass-strong">
                 <div class="board-header__left">
-                    <Button variant="ghost" size="sm" onClick={() => navigate('/boards')}>
-                        ←
-                    </Button>
+                    <button class="board-header__back-btn" onClick={() => navigate('/boards')} title="Back to boards">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M19 12H5M12 19l-7-7 7-7" />
+                        </svg>
+                        <span>Boards</span>
+                    </button>
+                    <span class="board-header__divider"></span>
                     <h1 class="board-header__title">
                         {board()?.title || 'Loading...'}
                     </h1>
@@ -322,26 +427,21 @@ export default function BoardPage() {
 
                 <div class="board-header__right">
                     <Show when={user}>
-                        <div style={{ display: 'flex', 'align-items': 'center', gap: 'var(--space-sm)' }}>
-                            <div
-                                class="avatar avatar--sm"
-                                style={{ background: user.color || 'var(--accent-primary)' }}
-                                title={user.name}
-                            >
-                                {user.avatar || user.name?.charAt(0).toUpperCase()}
+                        <div class="board-header__user">
+                            <div class="board-header__avatar" style={{ background: `linear-gradient(135deg, ${getPriorityColor('high')}, ${getPriorityColor('low')})` }}>
+                                {user.name?.charAt(0)?.toUpperCase() || 'U'}
                             </div>
-                            <span style={{ color: 'var(--text-secondary)', 'font-size': 'var(--font-size-sm)' }}>
-                                {user.name}
-                            </span>
+                            <span class="board-header__username">{user.name}</span>
                         </div>
                     </Show>
-                    <Button variant="ghost" size="sm" onClick={handleLogout}>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <button class="board-header__logout-btn" onClick={handleLogout} title="Logout">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
                             <polyline points="16 17 21 12 16 7" />
                             <line x1="21" y1="12" x2="9" y2="12" />
                         </svg>
-                    </Button>
+                        <span>Logout</span>
+                    </button>
                 </div>
             </header>
 
@@ -434,33 +534,86 @@ export default function BoardPage() {
                 </div>
             }>
                 <main class="board" role="region" aria-label="Kanban board columns">
-                    <For each={board()?.columns || []}>
-                        {(column) => (
+                    <Index each={board()?.columns || []}>
+                        {(column, columnIndex) => (
                             <div
                                 class={`column ${getDragState().draggedId && getDragState().draggedType === 'task' ? 'column--droppable' : ''}`}
                                 onDragOver={handleDragOver}
-                                onDrop={(e) => handleDrop(e, column.id)}
+                                onDrop={(e) => handleDrop(e, column().id)}
                             >
                                 <div class="column__header">
-                                    <h2 class="column__title">
-                                        <span
-                                            class="column__color"
-                                            style={{ background: column.color }}
-                                        ></span>
-                                        {column.title}
-                                        <span class="column__count">
-                                            {getColumnTasks(column.id).length}
-                                        </span>
-                                    </h2>
+                                    <Show when={editingColumnId() === (column().id || column()._id)} fallback={
+                                        <h2 class="column__title">
+                                            <span
+                                                class="column__color"
+                                                style={{ background: column().color }}
+                                            ></span>
+                                            <span
+                                                class="column__title-text"
+                                                onDblClick={() => startEditingColumn(column())}
+                                                title="Double-click to rename"
+                                            >
+                                                {column().title}
+                                            </span>
+                                            <span class="column__count">
+                                                {getColumnTasks(column().id).length}
+                                            </span>
+                                        </h2>
+                                    }>
+                                        <div class="column__title-edit">
+                                            <input
+                                                type="text"
+                                                class="column__title-input"
+                                                value={editingColumnTitle()}
+                                                onInput={(e) => setEditingColumnTitle(e.target.value)}
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter') {
+                                                        e.preventDefault();
+                                                        handleRenameColumn(column().id || column()._id);
+                                                    }
+                                                    if (e.key === 'Escape') {
+                                                        setEditingColumnId(null);
+                                                        setEditingColumnTitle('');
+                                                    }
+                                                }}
+                                                onBlur={() => handleRenameColumn(column().id || column()._id)}
+                                                ref={(el) => { if (el) { el.focus(); el.select(); } }}
+                                            />
+                                        </div>
+                                    </Show>
+                                    <div class="column__actions">
+                                        <button
+                                            class="column__action-btn"
+                                            onClick={(e) => { e.stopPropagation(); startEditingColumn(column()); }}
+                                            title="Rename column"
+                                        >
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                                            </svg>
+                                        </button>
+                                        <button
+                                            class="column__action-btn column__action-btn--danger"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleDeleteColumn(column().id || column()._id);
+                                            }}
+                                            title="Delete column"
+                                        >
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                                            </svg>
+                                        </button>
+                                    </div>
                                 </div>
 
                                 <div class="column__tasks">
-                                    <For each={getColumnTasks(column.id)}>
+                                    <For each={getColumnTasks(column().id)}>
                                         {(task, index) => (
                                             <TaskCard
                                                 task={task}
                                                 index={index()}
-                                                columnId={column.id}
+                                                columnId={column().id}
                                                 onDelete={() => handleDeleteTask(task._id)}
                                             />
                                         )}
@@ -469,10 +622,10 @@ export default function BoardPage() {
 
 
                                 {/* Enhanced Add Task Area */}
-                                <Show when={addingTaskColumnId() === column.id} fallback={
+                                <Show when={addingTaskColumnId() === column().id} fallback={
                                     <button
                                         class="column__add-btn"
-                                        onClick={() => setAddingTaskColumnId(column.id)}
+                                        onClick={() => setAddingTaskColumnId(column().id)}
                                     >
                                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                             <path d="M12 5v14M5 12h14" />
@@ -491,7 +644,7 @@ export default function BoardPage() {
                                             onKeyDown={(e) => {
                                                 if (e.key === 'Enter' && !e.shiftKey) {
                                                     e.preventDefault();
-                                                    handleAddTask(column.id);
+                                                    handleAddTask(column().id);
                                                 } else if (e.key === 'Escape') {
                                                     resetTaskForm();
                                                 }
@@ -595,7 +748,7 @@ export default function BoardPage() {
                                         <div class="column__add-actions">
                                             <Button
                                                 size="sm"
-                                                onClick={() => handleAddTask(column.id)}
+                                                onClick={() => handleAddTask(column().id)}
                                                 disabled={savingTask() || !newTaskTitle().trim()}
                                             >
                                                 {savingTask() ? 'Adding...' : 'Add Task'}
@@ -613,7 +766,54 @@ export default function BoardPage() {
                                 </Show>
                             </div>
                         )}
-                    </For>
+                    </Index>
+
+                    {/* Add Column Card */}
+                    <div class="column column--add">
+                        <Show when={showAddColumn()} fallback={
+                            <button
+                                class="column__add-column-btn"
+                                onClick={() => setShowAddColumn(true)}
+                            >
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <line x1="12" y1="5" x2="12" y2="19" />
+                                    <line x1="5" y1="12" x2="19" y2="12" />
+                                </svg>
+                                Add Column
+                            </button>
+                        }>
+                            <div class="column__add-column-form">
+                                <input
+                                    type="text"
+                                    class="column__add-column-input"
+                                    placeholder="Column name..."
+                                    value={newColumnTitle()}
+                                    onInput={(e) => setNewColumnTitle(e.target.value)}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') handleAddColumn();
+                                        if (e.key === 'Escape') { setShowAddColumn(false); setNewColumnTitle(''); }
+                                    }}
+                                    autofocus
+                                />
+                                <div class="column__add-column-actions">
+                                    <Button
+                                        size="sm"
+                                        onClick={handleAddColumn}
+                                        disabled={!newColumnTitle().trim()}
+                                    >
+                                        Add
+                                    </Button>
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => { setShowAddColumn(false); setNewColumnTitle(''); }}
+                                    >
+                                        Cancel
+                                    </Button>
+                                </div>
+                            </div>
+                        </Show>
+                    </div>
                 </main>
             </Show>
             <TaskModal onTaskUpdated={loadBoardData} />
