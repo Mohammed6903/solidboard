@@ -2,6 +2,7 @@ import { Router, Route, Navigate } from '@solidjs/router';
 import { Show, lazy, Suspense } from 'solid-js';
 import { isAuthenticated } from './store/authStore';
 import { getAnnouncement } from './utils/accessibility';
+import BoardPage from './pages/BoardPage';
 
 import './styles/variables.css';
 import './styles/global.css';
@@ -10,7 +11,7 @@ import './styles/global.css';
 const Landing = lazy(() => import('./pages/Landing'));
 const Login = lazy(() => import('./pages/Login'));
 const Signup = lazy(() => import('./pages/Signup'));
-const BoardPage = lazy(() => import('./pages/BoardPage'));
+const BoardsListPage = lazy(() => import('./pages/BoardsListPage'));
 
 // Loading spinner
 function LoadingSpinner() {
@@ -39,10 +40,10 @@ function ProtectedRoute(props) {
     );
 }
 
-// Public route (redirect to board if already logged in)
+// Public route (redirect to boards if already logged in)
 function PublicRoute(props) {
     return (
-        <Show when={!isAuthenticated()} fallback={<Navigate href="/board" />}>
+        <Show when={!isAuthenticated()} fallback={<Navigate href="/boards" />}>
             {props.children}
         </Show>
     );
@@ -68,7 +69,12 @@ function App() {
                             <Signup />
                         </PublicRoute>
                     )} />
-                    <Route path="/board" component={() => (
+                    <Route path="/boards" component={() => (
+                        <ProtectedRoute>
+                            <BoardsListPage />
+                        </ProtectedRoute>
+                    )} />
+                    <Route path="/board/:boardId" component={() => (
                         <ProtectedRoute>
                             <BoardPage />
                         </ProtectedRoute>

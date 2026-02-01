@@ -6,14 +6,8 @@ export const mockUsers = [
     { id: 'user-4', name: 'Emma Wilson', avatar: 'EW', color: '#10b981' },
 ];
 
-export const mockLabels = [
-    { id: 'label-1', name: 'Frontend', color: 'var(--label-1)' },
-    { id: 'label-2', name: 'Backend', color: 'var(--label-2)' },
-    { id: 'label-3', name: 'Design', color: 'var(--label-3)' },
-    { id: 'label-4', name: 'Bug', color: 'var(--label-4)' },
-    { id: 'label-5', name: 'Feature', color: 'var(--label-5)' },
-    { id: 'label-6', name: 'Urgent', color: 'var(--label-6)' },
-];
+// No preset labels - users will create their own tags
+export const mockLabels = [];
 
 export const createMockData = () => {
     const now = new Date().toISOString();
@@ -24,6 +18,7 @@ export const createMockData = () => {
                 id: 'board-1',
                 title: 'Product Development',
                 description: 'Main product development board',
+                tags: ['Development', 'Sprint'],
                 createdAt: now,
             }
         ],
@@ -40,26 +35,24 @@ export const createMockData = () => {
             {
                 id: 'task-1',
                 title: 'Implement user authentication',
-                description: 'Set up OAuth 2.0 authentication with Google and GitHub providers. Include session management and secure token storage.',
+                description: 'Set up OAuth 2.0 authentication with Google and GitHub providers.',
                 columnId: 'col-3',
                 priority: 'high',
-                labels: ['label-1', 'label-5'],
+                tags: [],
                 assigneeId: 'user-1',
                 dueDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
                 createdAt: now,
                 updatedAt: now,
-                comments: [
-                    { id: 'c1', userId: 'user-2', text: 'Should we use NextAuth for this?', createdAt: now }
-                ],
+                comments: [],
                 order: 0,
             },
             {
                 id: 'task-2',
                 title: 'Design system documentation',
-                description: 'Create comprehensive documentation for our design tokens, components, and usage guidelines.',
+                description: 'Create comprehensive documentation for design tokens and components.',
                 columnId: 'col-2',
                 priority: 'medium',
-                labels: ['label-3'],
+                tags: [],
                 assigneeId: 'user-2',
                 dueDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
                 createdAt: now,
@@ -70,10 +63,10 @@ export const createMockData = () => {
             {
                 id: 'task-3',
                 title: 'Fix navigation dropdown bug',
-                description: 'The dropdown menu closes unexpectedly when clicking on submenu items. Need to investigate event propagation.',
+                description: 'Dropdown closes unexpectedly on submenu clicks.',
                 columnId: 'col-2',
                 priority: 'urgent',
-                labels: ['label-4', 'label-1'],
+                tags: [],
                 assigneeId: 'user-3',
                 dueDate: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
                 createdAt: now,
@@ -84,10 +77,10 @@ export const createMockData = () => {
             {
                 id: 'task-4',
                 title: 'API rate limiting implementation',
-                description: 'Implement rate limiting on all public API endpoints using token bucket algorithm.',
+                description: 'Implement rate limiting on public API endpoints.',
                 columnId: 'col-1',
                 priority: 'medium',
-                labels: ['label-2'],
+                tags: [],
                 assigneeId: null,
                 dueDate: null,
                 createdAt: now,
@@ -98,26 +91,24 @@ export const createMockData = () => {
             {
                 id: 'task-5',
                 title: 'Dashboard analytics widgets',
-                description: 'Build reusable chart components for the analytics dashboard including line, bar, and pie charts.',
+                description: 'Build reusable chart components for analytics.',
                 columnId: 'col-4',
                 priority: 'high',
-                labels: ['label-1', 'label-3'],
+                tags: [],
                 assigneeId: 'user-4',
                 dueDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
                 createdAt: now,
                 updatedAt: now,
-                comments: [
-                    { id: 'c2', userId: 'user-1', text: 'Charts look great! Just need minor alignment fixes.', createdAt: now }
-                ],
+                comments: [],
                 order: 0,
             },
             {
                 id: 'task-6',
                 title: 'Mobile responsive improvements',
-                description: 'Optimize layout for tablet and mobile viewports. Focus on navigation and data tables.',
+                description: 'Optimize layout for tablet and mobile viewports.',
                 columnId: 'col-5',
                 priority: 'low',
-                labels: ['label-1', 'label-3'],
+                tags: [],
                 assigneeId: 'user-2',
                 dueDate: null,
                 createdAt: now,
@@ -128,10 +119,10 @@ export const createMockData = () => {
             {
                 id: 'task-7',
                 title: 'Database migration scripts',
-                description: 'Create migration scripts for the new user preferences schema.',
+                description: 'Create migration scripts for new user preferences schema.',
                 columnId: 'col-1',
                 priority: 'low',
-                labels: ['label-2'],
+                tags: [],
                 assigneeId: 'user-3',
                 dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
                 createdAt: now,
@@ -142,10 +133,10 @@ export const createMockData = () => {
             {
                 id: 'task-8',
                 title: 'Performance optimization',
-                description: 'Profile and optimize render performance. Target: reduce initial load time by 40%.',
+                description: 'Profile and optimize render performance.',
                 columnId: 'col-3',
                 priority: 'high',
-                labels: ['label-1', 'label-5'],
+                tags: [],
                 assigneeId: 'user-1',
                 dueDate: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
                 createdAt: now,
@@ -154,6 +145,9 @@ export const createMockData = () => {
                 order: 1,
             },
         ],
+
+        // User-created task tags (starts empty, grows as users add tags)
+        taskTags: [],
 
         users: mockUsers,
         labels: mockLabels,

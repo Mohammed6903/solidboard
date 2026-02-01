@@ -2,7 +2,6 @@ import { Show, For, createMemo } from 'solid-js';
 import { Avatar } from '../common';
 import {
     getUserById,
-    getLabelById,
     setSelectedTaskId,
     setIsTaskModalOpen
 } from '../../store/kanbanStore';
@@ -12,7 +11,6 @@ import {
     getDragState
 } from '../../utils/dragAndDrop';
 import { formatDueDate } from '../../utils/helpers';
-import { getPriorityLabel } from '../../utils/accessibility';
 import '../../styles/components/task-card.css';
 
 export function TaskCard(props) {
@@ -20,18 +18,15 @@ export function TaskCard(props) {
         props.task.assigneeId ? getUserById(props.task.assigneeId) : null
     );
 
-    const labels = createMemo(() =>
-        props.task.labels.map(id => getLabelById(id)).filter(Boolean)
-    );
-
     const dueInfo = createMemo(() => formatDueDate(props.task.dueDate));
 
     const isDragging = createMemo(() =>
-        getDragState().draggedId === props.task.id
+        getDragState().draggedId === (props.task._id || props.task.id)
     );
 
     const handleClick = () => {
-        setSelectedTaskId(props.task.id);
+        const taskId = props.task._id || props.task.id;
+        setSelectedTaskId(taskId);
         setIsTaskModalOpen(true);
     };
 
@@ -43,9 +38,10 @@ export function TaskCard(props) {
     };
 
     const handleDragStart = (e) => {
+        const taskId = props.task._id || props.task.id;
         e.dataTransfer.effectAllowed = 'move';
-        e.dataTransfer.setData('text/plain', props.task.id);
-        startDrag(props.task.id, 'task', props.task.columnId, props.index);
+        e.dataTransfer.setData('text/plain', taskId);
+        startDrag(taskId, 'task', props.task.columnId, props.index);
     };
 
     const handleDragEnd = () => {
@@ -54,61 +50,73 @@ export function TaskCard(props) {
 
     return (
         <article
-            class={`task-card ${isDragging() ? 'task-card--dragging' : ''}`}
+            class={`task-card task-card--priority-${props.task.priority} ${isDragging() ? 'task-card--dragging' : ''}`}
             draggable="true"
             tabIndex="0"
             role="option"
             aria-selected="false"
-            aria-label={`${props.task.title}, ${getPriorityLabel(props.task.priority)}`}
+            aria-label={`${props.task.title}, ${props.task.priority} priority`}
             onClick={handleClick}
             onKeyDown={handleKeyDown}
             onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
         >
-            {/* Priority Indicator */}
-            <div class={`task-card__priority task-card__priority--${props.task.priority}`} />
-
             <div class="task-card__content">
-                {/* Labels */}
-                <Show when={labels().length > 0}>
-                    <div class="task-card__labels">
-                        <For each={labels().slice(0, 3)}>
-                            {(label) => (
-                                <span
-                                    class="task-card__label"
-                                    style={{ background: label.color, color: 'white' }}
-                                >
-                                    {label.name}
+                <div class="task-card__header">
+                    <h4 class="task-card__title">{props.task.title}</h4>
+
+                    {/* Delete Button (visible on hover via CSS) */}
+                    <button
+                        class="task-card__delete"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            if (props.onDelete) {
+                                const taskId = props.task._id || props.task.id;
+                                props.onDelete(taskId);
+                            }
+                        }}
+                    >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M18 6L6 18M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+
+                {/* Task Tags */}
+                <Show when={props.task.tags && props.task.tags.length > 0}>
+                    <div class="task-card__tags">
+                        <For each={props.task.tags.slice(0, 3)}>
+                            {(tag) => (
+                                <span class="task-card__tag">
+                                    {tag}
                                 </span>
                             )}
                         </For>
-                        <Show when={labels().length > 3}>
-                            <span class="task-card__label">+{labels().length - 3}</span>
+                        <Show when={props.task.tags.length > 3}>
+                            <span class="task-card__tag task-card__tag--more">+{props.task.tags.length - 3}</span>
                         </Show>
                     </div>
                 </Show>
-
-                {/* Title */}
-                <h4 class="task-card__title">{props.task.title}</h4>
 
                 {/* Footer */}
                 <div class="task-card__footer">
                     <div class="task-card__meta">
                         {/* Due Date */}
                         <Show when={dueInfo()}>
-                            <span class={`task-card__due ${dueInfo().isOverdue ? 'task-card__due--overdue' :
-                                    dueInfo().isUrgent ? 'task-card__due--urgent' : ''
+                            <span class={`task-card__date ${dueInfo().isOverdue ? 'task-card__date--overdue' :
+                                dueInfo().isUrgent ? 'task-card__date--soon' :
+                                    dueInfo().isToday ? 'task-card__date--today' : ''
                                 }`}>
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <circle cx="12" cy="12" r="10" />
-                                    <path d="M12 6v6l4 2" />
+                                    <polyline points="12 6 12 12 16 14" />
                                 </svg>
                                 {dueInfo().label}
                             </span>
                         </Show>
 
                         {/* Comments Count */}
-                        <Show when={props.task.comments.length > 0}>
+                        <Show when={props.task.comments && props.task.comments.length > 0}>
                             <span class="task-card__icon">
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />

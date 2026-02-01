@@ -23,19 +23,32 @@ body {
     overflow-x: hidden;
 }
 
-/* Background Gradient */
+/* Enhanced Background Gradient */
 body::before {
     content: '';
     position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
     background:
-        radial-gradient(ellipse at 20% 20%, rgba(99, 102, 241, 0.15) 0%, transparent 50%),
-        radial-gradient(ellipse at 80% 80%, rgba(139, 92, 246, 0.1) 0%, transparent 50%),
-        var(--bg-primary);
+        radial-gradient(circle at 50% 50%, rgba(99, 102, 241, 0.08) 0%, transparent 25%),
+        radial-gradient(circle at 30% 70%, rgba(168, 85, 247, 0.05) 0%, transparent 25%);
     z-index: -1;
+    pointer-events: none;
+    animation: bg-pulse 20s ease-in-out infinite alternate;
+}
+
+@keyframes bg-pulse {
+    0% {
+        transform: scale(1);
+        opacity: 0.8;
+    }
+
+    100% {
+        transform: scale(1.1);
+        opacity: 1;
+    }
 }
 
 #root {
@@ -51,17 +64,19 @@ h3,
 h4,
 h5,
 h6 {
-    font-weight: var(--font-weight-semibold);
-    line-height: var(--line-height-tight);
+    font-weight: var(--font-weight-bold);
+    letter-spacing: -0.025em;
     color: var(--text-primary);
 }
 
 h1 {
     font-size: var(--font-size-3xl);
+    line-height: 1.1;
 }
 
 h2 {
     font-size: var(--font-size-2xl);
+    line-height: 1.2;
 }
 
 h3 {
@@ -74,25 +89,28 @@ h4 {
 
 p {
     color: var(--text-secondary);
+    max-width: 65ch;
 }
 
 a {
     color: var(--accent-primary);
     text-decoration: none;
-    transition: color var(--transition-fast);
+    transition: all var(--transition-fast);
 }
 
 a:hover {
     color: var(--accent-primary-hover);
+    text-shadow: 0 0 8px rgba(99, 102, 241, 0.3);
 }
 
-/* Focus Styles */
+/* Focus Styles - Accessible but stylish */
 :focus-visible {
     outline: 2px solid var(--accent-primary);
-    outline-offset: 2px;
+    outline-offset: 4px;
+    border-radius: 2px;
 }
 
-/* Button Reset */
+/* Form Elements */
 button {
     font-family: inherit;
     font-size: inherit;
@@ -107,15 +125,27 @@ button:disabled {
     opacity: 0.5;
 }
 
-/* Input Reset */
 input,
 textarea,
 select {
     font-family: inherit;
     font-size: inherit;
-    color: inherit;
-    background: transparent;
-    border: none;
+    color: var(--text-primary);
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    padding: 0.6em 1em;
+    width: 100%;
+    transition: all var(--transition-fast);
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+    background: var(--bg-secondary);
 }
 
 input::placeholder,
@@ -125,19 +155,19 @@ textarea::placeholder {
 
 /* Scrollbar Styling */
 ::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+    width: 10px;
+    height: 10px;
 }
 
 ::-webkit-scrollbar-track {
-    background: var(--bg-secondary);
-    border-radius: var(--radius-full);
+    background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
     background: var(--bg-tertiary);
     border-radius: var(--radius-full);
-    border: 2px solid var(--bg-secondary);
+    border: 3px solid var(--bg-primary);
+    /* Spacer */
 }
 
 ::-webkit-scrollbar-thumb:hover {
@@ -169,7 +199,15 @@ textarea::placeholder {
     justify-content: center;
 }
 
-/* Animation Keyframes */
+/* Global Animations */
+.animate-fade-in {
+    animation: fadeIn var(--transition-normal) forwards;
+}
+
+.animate-slide-up {
+    animation: slideUp var(--transition-normal) cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
 @keyframes fadeIn {
     from {
         opacity: 0;
@@ -183,19 +221,7 @@ textarea::placeholder {
 @keyframes slideUp {
     from {
         opacity: 0;
-        transform: translateY(10px);
-    }
-
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-@keyframes slideDown {
-    from {
-        opacity: 0;
-        transform: translateY(-10px);
+        transform: translateY(20px);
     }
 
     to {
@@ -207,7 +233,7 @@ textarea::placeholder {
 @keyframes scaleIn {
     from {
         opacity: 0;
-        transform: scale(0.95);
+        transform: scale(0.9);
     }
 
     to {
@@ -216,23 +242,7 @@ textarea::placeholder {
     }
 }
 
-@keyframes shake {
-
-    0%,
-    100% {
-        transform: translateX(0);
-    }
-
-    25% {
-        transform: translateX(-5px);
-    }
-
-    75% {
-        transform: translateX(5px);
-    }
-}
-
-@keyframes pulse {
+@keyframes pulse-soft {
 
     0%,
     100% {
@@ -240,7 +250,7 @@ textarea::placeholder {
     }
 
     50% {
-        opacity: 0.5;
+        opacity: 0.7;
     }
 }
 
