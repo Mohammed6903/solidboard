@@ -1,26 +1,60 @@
 import { A } from '@solidjs/router';
+import { createSignal, onMount, onCleanup } from 'solid-js';
 import '../styles/pages/landing.css';
 
 export default function Landing() {
+    const [scrolled, setScrolled] = createSignal(false);
+    const [visibleSections, setVisibleSections] = createSignal(new Set());
+
+    onMount(() => {
+        const handleScroll = () => {
+            setScrolled(window.scrollY > 50);
+        };
+        window.addEventListener('scroll', handleScroll, { passive: true });
+        onCleanup(() => window.removeEventListener('scroll', handleScroll));
+
+        // Intersection observer for scroll animations
+        const observer = new IntersectionObserver(
+            (entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        setVisibleSections(prev => new Set([...prev, entry.target.id]));
+                    }
+                });
+            },
+            { threshold: 0.15, rootMargin: '0px 0px -50px 0px' }
+        );
+
+        document.querySelectorAll('[data-animate]').forEach(el => observer.observe(el));
+        onCleanup(() => observer.disconnect());
+    });
+
     return (
         <div class="landing">
+            {/* Animated Background Blobs */}
+            <div class="landing-bg">
+                <div class="landing-blob landing-blob--1"></div>
+                <div class="landing-blob landing-blob--2"></div>
+                <div class="landing-blob landing-blob--3"></div>
+            </div>
+
             {/* Navigation */}
-            <nav class="landing-nav">
+            <nav class={`landing-nav ${scrolled() ? 'landing-nav--scrolled' : ''}`}>
                 <div class="landing-nav__logo">
                     <div class="landing-nav__logo-icon">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
-                            <rect x="3" y="3" width="7" height="7" rx="1" />
-                            <rect x="14" y="3" width="7" height="7" rx="1" />
-                            <rect x="3" y="14" width="7" height="7" rx="1" />
-                            <rect x="14" y="14" width="7" height="7" rx="1" />
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5">
+                            <rect x="3" y="3" width="7" height="7" rx="1.5" />
+                            <rect x="14" y="3" width="7" height="7" rx="1.5" />
+                            <rect x="3" y="14" width="7" height="7" rx="1.5" />
+                            <rect x="14" y="14" width="7" height="7" rx="1.5" />
                         </svg>
                     </div>
-                    Kanban
+                    <span class="landing-nav__logo-text">SolidBoard</span>
                 </div>
 
                 <div class="landing-nav__actions">
-                    <A href="/login" class="btn btn--ghost">Log in</A>
-                    <A href="/signup" class="btn btn--primary">Sign up free</A>
+                    <A href="/login" class="landing-btn landing-btn--ghost">Log in</A>
+                    <A href="/signup" class="landing-btn landing-btn--primary">Get Started</A>
                 </div>
             </nav>
 
@@ -28,128 +62,233 @@ export default function Landing() {
             <section class="hero">
                 <div class="hero__content">
                     <div class="hero__badge">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                        </svg>
-                        Built with SolidJS
+                        <span class="hero__badge-dot"></span>
+                        Built with SolidJS + Express + MongoDB
                     </div>
 
                     <h1 class="hero__title">
-                        Organize Your Work,<br />
+                        Organize Your&nbsp;Work,
+                        <br />
                         <span class="hero__title-gradient">Achieve More</span>
                     </h1>
 
                     <p class="hero__subtitle">
-                        A powerful, beautiful Kanban board to manage your projects.
-                        Drag, drop, and watch your productivity soar.
+                        A beautifully crafted Kanban board that helps you manage projects with
+                        intuitive drag-and-drop, smart filters, and real-time organization.
                     </p>
 
                     <div class="hero__actions">
-                        <A href="/signup" class="btn hero__btn hero__btn--primary">
-                            Get Started Free
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <A href="/signup" class="landing-btn landing-btn--hero">
+                            Start For Free
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                                 <path d="M5 12h14M12 5l7 7-7 7" />
                             </svg>
                         </A>
-                        <A href="/login" class="btn btn--secondary hero__btn">
+                        <A href="/login" class="landing-btn landing-btn--outline">
                             Sign In
                         </A>
+                    </div>
+
+                    {/* Stats */}
+                    <div class="hero__stats">
+                        <div class="hero__stat">
+                            <span class="hero__stat-value">∞</span>
+                            <span class="hero__stat-label">Boards</span>
+                        </div>
+                        <div class="hero__stat-divider"></div>
+                        <div class="hero__stat">
+                            <span class="hero__stat-value">JWT</span>
+                            <span class="hero__stat-label">Secure Auth</span>
+                        </div>
+                        <div class="hero__stat-divider"></div>
+                        <div class="hero__stat">
+                            <span class="hero__stat-value">D&D</span>
+                            <span class="hero__stat-label">Drag & Drop</span>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Hero Visual — Floating Board Preview */}
+                <div class="hero__visual">
+                    <div class="hero__board-preview">
+                        <div class="hero__board-header">
+                            <div class="hero__board-dots">
+                                <span></span><span></span><span></span>
+                            </div>
+                            <span class="hero__board-title-text">My Project Board</span>
+                        </div>
+                        <div class="hero__board-columns">
+                            <div class="hero__board-col">
+                                <div class="hero__board-col-title" style="border-color: #818cf8;">To Do</div>
+                                <div class="hero__board-task hero__board-task--high">Design landing page</div>
+                                <div class="hero__board-task hero__board-task--medium">Setup CI/CD</div>
+                                <div class="hero__board-task hero__board-task--low">Write docs</div>
+                            </div>
+                            <div class="hero__board-col">
+                                <div class="hero__board-col-title" style="border-color: #fbbf24;">In Progress</div>
+                                <div class="hero__board-task hero__board-task--urgent">Auth system</div>
+                                <div class="hero__board-task hero__board-task--high">API endpoints</div>
+                            </div>
+                            <div class="hero__board-col">
+                                <div class="hero__board-col-title" style="border-color: #34d399;">Done</div>
+                                <div class="hero__board-task hero__board-task--done">Project setup</div>
+                                <div class="hero__board-task hero__board-task--done">Database schema</div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </section>
 
             {/* Features Section */}
-            <section class="features">
-                <div class="features__header">
-                    <h2 class="features__title">Everything you need to stay organized</h2>
-                    <p class="features__subtitle">Powerful features to boost your productivity</p>
+            <section class="features" id="features" data-animate>
+                <div class={`features__inner ${visibleSections().has('features') ? 'visible' : ''}`}>
+                    <div class="features__header">
+                        <span class="features__tag">Features</span>
+                        <h2 class="features__title">Everything you need to stay organized</h2>
+                        <p class="features__subtitle">Powerful features designed to boost your productivity and keep your projects on track.</p>
+                    </div>
+
+                    <div class="features__grid">
+                        <div class="feature-card">
+                            <div class="feature-card__icon feature-card__icon--indigo">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="3" y="3" width="18" height="18" rx="2" />
+                                    <path d="M3 9h18M9 21V9" />
+                                </svg>
+                            </div>
+                            <h3 class="feature-card__title">Kanban Boards</h3>
+                            <p class="feature-card__desc">
+                                Visualize workflow with customizable columns. Drag and drop tasks to update status.
+                            </p>
+                        </div>
+
+                        <div class="feature-card">
+                            <div class="feature-card__icon feature-card__icon--violet">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polygon points="12 2 2 7 12 12 22 7 12 2" />
+                                    <polyline points="2 17 12 22 22 17" />
+                                    <polyline points="2 12 12 17 22 12" />
+                                </svg>
+                            </div>
+                            <h3 class="feature-card__title">Labels & Priority</h3>
+                            <p class="feature-card__desc">
+                                Categorize with colorful labels and set priorities to focus on what matters most.
+                            </p>
+                        </div>
+
+                        <div class="feature-card">
+                            <div class="feature-card__icon feature-card__icon--cyan">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="12" cy="12" r="10" />
+                                    <path d="M12 6v6l4 2" />
+                                </svg>
+                            </div>
+                            <h3 class="feature-card__title">Due Dates</h3>
+                            <p class="feature-card__desc">
+                                Never miss a deadline. Visual indicators for overdue, urgent, and upcoming tasks.
+                            </p>
+                        </div>
+
+                        <div class="feature-card">
+                            <div class="feature-card__icon feature-card__icon--emerald">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="11" cy="11" r="8" />
+                                    <path d="m21 21-4.35-4.35" />
+                                </svg>
+                            </div>
+                            <h3 class="feature-card__title">Search & Filter</h3>
+                            <p class="feature-card__desc">
+                                Find any task instantly with powerful search. Filter by priority, tags, or keywords.
+                            </p>
+                        </div>
+
+                        <div class="feature-card">
+                            <div class="feature-card__icon feature-card__icon--amber">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                                </svg>
+                            </div>
+                            <h3 class="feature-card__title">Comments</h3>
+                            <p class="feature-card__desc">
+                                Add comments to tasks to keep notes, discuss progress, and track decisions.
+                            </p>
+                        </div>
+
+                        <div class="feature-card">
+                            <div class="feature-card__icon feature-card__icon--rose">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                                </svg>
+                            </div>
+                            <h3 class="feature-card__title">Secure & Private</h3>
+                            <p class="feature-card__desc">
+                                JWT authentication and encrypted passwords keep your data safe and private.
+                            </p>
+                        </div>
+                    </div>
                 </div>
+            </section>
 
-                <div class="features__grid">
-                    <div class="feature-card">
-                        <div class="feature-card__icon">
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <rect x="3" y="3" width="18" height="18" rx="2" />
-                                <path d="M3 9h18M9 21V9" />
-                            </svg>
+            {/* Tech Stack Section */}
+            <section class="tech-stack" id="tech-stack" data-animate>
+                <div class={`tech-stack__inner ${visibleSections().has('tech-stack') ? 'visible' : ''}`}>
+                    <span class="features__tag">Tech Stack</span>
+                    <h2 class="features__title">Built with Modern Technologies</h2>
+                    <div class="tech-stack__grid">
+                        <div class="tech-card">
+                            <span class="tech-card__emoji">⚡</span>
+                            <h4>SolidJS</h4>
+                            <p>Reactive UI with fine-grained reactivity</p>
                         </div>
-                        <h3 class="feature-card__title">Kanban Boards</h3>
-                        <p class="feature-card__desc">
-                            Visualize your workflow with customizable columns. Drag and drop tasks to update status instantly.
-                        </p>
+                        <div class="tech-card">
+                            <span class="tech-card__emoji">🚀</span>
+                            <h4>Express.js</h4>
+                            <p>Fast, minimal backend framework</p>
+                        </div>
+                        <div class="tech-card">
+                            <span class="tech-card__emoji">🍃</span>
+                            <h4>MongoDB</h4>
+                            <p>Flexible document database</p>
+                        </div>
+                        <div class="tech-card">
+                            <span class="tech-card__emoji">🔐</span>
+                            <h4>JWT Auth</h4>
+                            <p>Secure token-based authentication</p>
+                        </div>
                     </div>
+                </div>
+            </section>
 
-                    <div class="feature-card">
-                        <div class="feature-card__icon">
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                                <circle cx="9" cy="7" r="4" />
-                                <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
-                            </svg>
-                        </div>
-                        <h3 class="feature-card__title">Team Collaboration</h3>
-                        <p class="feature-card__desc">
-                            Assign tasks to team members, add comments, and keep everyone aligned on project progress.
-                        </p>
-                    </div>
-
-                    <div class="feature-card">
-                        <div class="feature-card__icon">
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <circle cx="12" cy="12" r="10" />
-                                <path d="M12 6v6l4 2" />
-                            </svg>
-                        </div>
-                        <h3 class="feature-card__title">Due Dates</h3>
-                        <p class="feature-card__desc">
-                            Never miss a deadline. Set due dates and get visual indicators for overdue or urgent tasks.
-                        </p>
-                    </div>
-
-                    <div class="feature-card">
-                        <div class="feature-card__icon">
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <polygon points="12 2 2 7 12 12 22 7 12 2" />
-                                <polyline points="2 17 12 22 22 17" />
-                                <polyline points="2 12 12 17 22 12" />
-                            </svg>
-                        </div>
-                        <h3 class="feature-card__title">Labels & Priority</h3>
-                        <p class="feature-card__desc">
-                            Categorize tasks with colorful labels and set priorities to focus on what matters most.
-                        </p>
-                    </div>
-
-                    <div class="feature-card">
-                        <div class="feature-card__icon">
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <circle cx="11" cy="11" r="8" />
-                                <path d="m21 21-4.35-4.35" />
-                            </svg>
-                        </div>
-                        <h3 class="feature-card__title">Search & Filter</h3>
-                        <p class="feature-card__desc">
-                            Find any task instantly with powerful search and filter by assignee, priority, or labels.
-                        </p>
-                    </div>
-
-                    <div class="feature-card">
-                        <div class="feature-card__icon">
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                            </svg>
-                        </div>
-                        <h3 class="feature-card__title">Secure & Private</h3>
-                        <p class="feature-card__desc">
-                            Your data is safe with JWT authentication and secure MongoDB storage.
-                        </p>
-                    </div>
+            {/* CTA Section */}
+            <section class="cta">
+                <div class="cta__content">
+                    <h2 class="cta__title">Ready to get organized?</h2>
+                    <p class="cta__subtitle">Create your free account and start managing projects today.</p>
+                    <A href="/signup" class="landing-btn landing-btn--hero landing-btn--lg">
+                        Get Started — It's Free
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                            <path d="M5 12h14M12 5l7 7-7 7" />
+                        </svg>
+                    </A>
                 </div>
             </section>
 
             {/* Footer */}
             <footer class="landing-footer">
-                <p>© 2026 Kanban Board. Built with SolidJS, Express.js and MongoDB.</p>
+                <div class="landing-footer__inner">
+                    <div class="landing-footer__brand">
+                        <div class="landing-nav__logo-icon" style="width: 28px; height: 28px;">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5">
+                                <rect x="3" y="3" width="7" height="7" rx="1.5" />
+                                <rect x="14" y="3" width="7" height="7" rx="1.5" />
+                                <rect x="3" y="14" width="7" height="7" rx="1.5" />
+                                <rect x="14" y="14" width="7" height="7" rx="1.5" />
+                            </svg>
+                        </div>
+                        <span>SolidBoard</span>
+                    </div>
+                    <p class="landing-footer__copy">© 2026 SolidBoard. Built with SolidJS, Express.js & MongoDB.</p>
+                </div>
             </footer>
         </div>
     );

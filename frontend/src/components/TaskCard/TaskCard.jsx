@@ -14,9 +14,12 @@ import { formatDueDate } from '../../utils/helpers';
 import '../../styles/components/task-card.css';
 
 export function TaskCard(props) {
-    const assignee = createMemo(() =>
-        props.task.assigneeId ? getUserById(props.task.assigneeId) : null
-    );
+    const assignee = createMemo(() => {
+        if (props.task.assignee && typeof props.task.assignee === 'object') {
+            return props.task.assignee;
+        }
+        return props.task.assigneeId ? getUserById(props.task.assigneeId) : null;
+    });
 
     const dueInfo = createMemo(() => formatDueDate(props.task.dueDate));
 
@@ -83,17 +86,17 @@ export function TaskCard(props) {
                 </div>
 
                 {/* Task Tags */}
-                <Show when={props.task.tags && props.task.tags.length > 0}>
+                <Show when={(props.task.labels || props.task.tags)?.length > 0}>
                     <div class="task-card__tags">
-                        <For each={props.task.tags.slice(0, 3)}>
+                        <For each={(props.task.labels || props.task.tags).slice(0, 3)}>
                             {(tag) => (
                                 <span class="task-card__tag">
                                     {tag}
                                 </span>
                             )}
                         </For>
-                        <Show when={props.task.tags.length > 3}>
-                            <span class="task-card__tag task-card__tag--more">+{props.task.tags.length - 3}</span>
+                        <Show when={(props.task.labels || props.task.tags).length > 3}>
+                            <span class="task-card__tag task-card__tag--more">+{(props.task.labels || props.task.tags).length - 3}</span>
                         </Show>
                     </div>
                 </Show>

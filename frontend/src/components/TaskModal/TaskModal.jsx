@@ -1,4 +1,4 @@
-import { createSignal, createEffect, onMount, For, Show } from 'solid-js';
+import { createSignal, createEffect, createMemo, For, Show } from 'solid-js';
 import {
     isTaskModalOpen,
     setIsTaskModalOpen,
@@ -17,25 +17,52 @@ export default function TaskModal(props) {
     const [columnId, setColumnId] = createSignal('');
     const [loading, setLoading] = createSignal(false);
 
+    // Tag editing state
+    const [taskTags, setTaskTags] = createSignal([]);
+    const [tagInput, setTagInput] = createSignal('');
+    const [showTagDropdown, setShowTagDropdown] = createSignal(false);
+
+    // Available tags from props
+    const availableTags = () => props.availableTags || [];
+
+    // Filtered suggestions based on input
+    const filteredSuggestions = createMemo(() => {
+        const query = tagInput().toLowerCase().trim();
+        if (!query) return [];
+        const current = taskTags();
+        return availableTags()
+            .filter(tag =>
+                tag.toLowerCase().includes(query) &&
+                !current.includes(tag)
+            )
+            .slice(0, 8);
+    });
+
+    // Whether to show "create new" option
+    const showCreateOption = createMemo(() => {
+        const query = tagInput().trim();
+        if (!query) return false;
+        const existing = availableTags().find(t => t.toLowerCase() === query.toLowerCase());
+        const alreadyAdded = taskTags().includes(query);
+        return !existing && !alreadyAdded;
+    });
+
     // Load task data when modal opens or selectedTaskId changes
-    createEffect(async () => {
+    createEffect(() => {
         const isOpen = isTaskModalOpen();
         const taskId = selectedTaskId();
 
         if (isOpen && taskId) {
             setLoading(true);
             try {
-                // In a real app we might fetch fresh data, or use props.
-                // For now, let's assume we can fetch it or find it in the store.
-                // Since we don't have a direct "getTask" in store that returns synchronously without fetching,
-                // we'll simulate a fetch or use the api if available.
-                const task = await taskApi.getById(taskId);
+                const task = props.tasks?.find(t => (t._id || t.id) === taskId);
                 if (task) {
-                    setTitle(task.title);
+                    setTitle(task.title || '');
                     setDescription(task.description || '');
                     setPriority(task.priority || 'medium');
                     setDueDate(task.dueDate ? task.dueDate.split('T')[0] : '');
-                    setColumnId(task.columnId);
+                    setColumnId(task.columnId || '');
+                    setTaskTags(task.labels || task.tags || []);
                 }
             } catch (err) {
                 console.error("Failed to load task details", err);
@@ -43,13 +70,15 @@ export default function TaskModal(props) {
                 setLoading(false);
             }
         } else if (isOpen && !taskId) {
-            // New task mode (if we reuse this modal for creating new tasks from a global button)
-            // Reset fields
             setTitle('');
             setDescription('');
             setPriority('medium');
             setDueDate('');
+            setTaskTags([]);
         }
+        // Reset tag input
+        setTagInput('');
+        setShowTagDropdown(false);
     });
 
     const handleClose = () => {
@@ -65,17 +94,15 @@ export default function TaskModal(props) {
                 title: title(),
                 description: description(),
                 priority: priority(),
-                dueDate: dueDate() ? new Date(dueDate()).toISOString() : null
+                dueDate: dueDate() ? new Date(dueDate()).toISOString() : null,
+                tags: taskTags()
             };
 
             if (taskId) {
                 await taskApi.update(taskId, payload);
-                // Trigger a refresh of the board or update local store
                 if (props.onTaskUpdated) {
                     props.onTaskUpdated();
                 }
-            } else {
-                // Create logic if needed here
             }
             handleClose();
         } catch (err) {
@@ -85,7 +112,31 @@ export default function TaskModal(props) {
         }
     };
 
-    // Close on escape
+    const addTag = (tag) => {
+        const trimmed = tag.trim();
+        if (trimmed && !taskTags().includes(trimmed)) {
+            setTaskTags([...taskTags(), trimmed]);
+        }
+        setTagInput('');
+        setShowTagDropdown(false);
+    };
+
+    const removeTag = (tagToRemove) => {
+        setTaskTags(taskTags().filter(t => t !== tagToRemove));
+    };
+
+    const handleTagKeyDown = (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            const val = tagInput().trim();
+            if (val) addTag(val);
+        } else if (e.key === 'Escape') {
+            setShowTagDropdown(false);
+        } else if (e.key === 'Backspace' && !tagInput() && taskTags().length > 0) {
+            setTaskTags(taskTags().slice(0, -1));
+        }
+    };
+
     const handleKeyDown = (e) => {
         if (e.key === 'Escape') handleClose();
     };
@@ -154,6 +205,79 @@ export default function TaskModal(props) {
                                     onInput={(e) => setDueDate(e.target.value)}
                                     class="modal-input"
                                 />
+                            </div>
+                        </div>
+
+                        {/* Tag Editor */}
+                        <div class="form-group">
+                            <label>Tags</label>
+                            <div class="modal-tag-editor">
+                                {/* Selected tags */}
+                                <Show when={taskTags().length > 0}>
+                                    <div class="modal-selected-tags">
+                                        <For each={taskTags()}>
+                                            {(tag) => (
+                                                <span class="modal-tag-pill">
+                                                    {tag}
+                                                    <button
+                                                        class="modal-tag-remove"
+                                                        onClick={() => removeTag(tag)}
+                                                        type="button"
+                                                    >×</button>
+                                                </span>
+                                            )}
+                                        </For>
+                                    </div>
+                                </Show>
+
+                                {/* Tag input with dropdown */}
+                                <div class="modal-tag-combobox">
+                                    <input
+                                        type="text"
+                                        value={tagInput()}
+                                        onInput={(e) => {
+                                            setTagInput(e.target.value);
+                                            setShowTagDropdown(true);
+                                        }}
+                                        onFocus={() => { if (tagInput()) setShowTagDropdown(true); }}
+                                        onBlur={() => setTimeout(() => setShowTagDropdown(false), 200)}
+                                        onKeyDown={handleTagKeyDown}
+                                        placeholder={taskTags().length > 0 ? "Add another tag..." : "Search or create tags..."}
+                                        class="modal-tag-input"
+                                    />
+
+                                    {/* Dropdown suggestions */}
+                                    <Show when={showTagDropdown() && (filteredSuggestions().length > 0 || showCreateOption())}>
+                                        <div class="modal-tag-dropdown">
+                                            <For each={filteredSuggestions()}>
+                                                {(suggestion) => (
+                                                    <button
+                                                        class="modal-tag-option"
+                                                        onMouseDown={(e) => {
+                                                            e.preventDefault();
+                                                            addTag(suggestion);
+                                                        }}
+                                                        type="button"
+                                                    >
+                                                        {suggestion}
+                                                    </button>
+                                                )}
+                                            </For>
+                                            <Show when={showCreateOption()}>
+                                                <button
+                                                    class="modal-tag-option modal-tag-option--new"
+                                                    onMouseDown={(e) => {
+                                                        e.preventDefault();
+                                                        addTag(tagInput().trim());
+                                                    }}
+                                                    type="button"
+                                                >
+                                                    + Create "{tagInput().trim()}"
+                                                </button>
+                                            </Show>
+                                        </div>
+                                    </Show>
+                                </div>
                             </div>
                         </div>
                     </div>

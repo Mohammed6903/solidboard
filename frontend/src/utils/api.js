@@ -1,298 +1,231 @@
-import { createMockData, generateId } from '../store/mockData';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
-// Storage keys
-const STORAGE_KEY = 'kanban_data';
-const TOKEN_KEY = 'kanban_token';
-const USER_KEY = 'kanban_user';
+const getHeaders = () => {
+    const token = localStorage.getItem('kanban_token');
+    return {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {})
+    };
+};
 
-// Initialize data if empty
-const initializeData = () => {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (!stored) {
-        const initialData = createMockData();
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(initialData));
-        return initialData;
+const handleResponse = async (response) => {
+    if (!response.ok) {
+        const error = await response.json().catch(() => ({ message: 'Request failed' }));
+        throw new Error(error.message || `Request failed with status ${response.status}`);
     }
-    return JSON.parse(stored);
-};
-
-// Helper to simulate network delay
-const delay = (ms = 500) => new Promise(resolve => setTimeout(resolve, ms));
-
-// Helper to get/set data
-const getData = () => {
-    return initializeData();
-};
-
-const saveData = (data) => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    return response.json();
 };
 
 // --- Auth API ---
 export const authApi = {
     login: async (email, password) => {
-        await delay();
-        const data = getData();
-        const user = data.users.find(u => u.email === email || true); // Mock login: allow any
-        if (user) {
-            localStorage.setItem(TOKEN_KEY, 'mock-jwt-token');
-            localStorage.setItem(USER_KEY, JSON.stringify(user));
-            return { user, token: 'mock-jwt-token' };
-        }
-        throw new Error('Invalid credentials');
+        const response = await fetch(`${API_URL}/auth/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password })
+        });
+        const data = await handleResponse(response);
+        // data contains { token, ...userFields }
+        // We'll return it as is, expecting authStore to handle storage
+        return data;
     },
 
     register: async (name, email, password) => {
-        await delay();
-        const data = getData();
-        const newUser = { id: generateId(), name, email, avatar: name[0], color: '#6366f1' };
-        data.users.push(newUser);
-        saveData(data);
-
-        localStorage.setItem(TOKEN_KEY, 'mock-jwt-token');
-        localStorage.setItem(USER_KEY, JSON.stringify(newUser));
-        return { user: newUser, token: 'mock-jwt-token' };
+        const response = await fetch(`${API_URL}/auth/register`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, email, password })
+        });
+        return handleResponse(response);
     },
 
     getMe: async () => {
-        await delay(200);
-        const userStr = localStorage.getItem(USER_KEY);
-        if (!userStr) throw new Error('Not authenticated');
-        return JSON.parse(userStr);
+        const response = await fetch(`${API_URL}/auth/me`, {
+            headers: getHeaders()
+        });
+        return handleResponse(response);
     }
 };
 
 // --- Board API ---
 export const boardApi = {
     getAll: async () => {
-        await delay();
-        const data = getData();
-        return data.boards;
+        const response = await fetch(`${API_URL}/boards`, {
+            headers: getHeaders()
+        });
+        return handleResponse(response);
     },
 
     getById: async (id) => {
-        await delay();
-        const data = getData();
-        const board = data.boards.find(b => b.id === id || b._id === id);
-        if (!board) throw new Error('Board not found');
-
-        // Populate columns
-        const boardColumns = data.columns.filter(c => c.boardId === id).sort((a, b) => a.order - b.order);
-
-        // Populate tasks
-        const boardTasks = data.tasks.filter(t => boardColumns.some(c => c.id === t.columnId));
-
-        return {
-            board: { ...board, columns: boardColumns },
-            tasks: boardTasks
-        };
+        const response = await fetch(`${API_URL}/boards/${id}`, {
+            headers: getHeaders()
+        });
+        return handleResponse(response);
     },
 
     create: async (boardData) => {
-        await delay();
-        const data = getData();
-        const newBoard = {
-            id: generateId(),
-            title: boardData.title,
-            description: boardData.description || '',
-            tags: boardData.tags || [],
-            createdAt: new Date().toISOString(),
-            _id: generateId()
-        };
-        newBoard.id = newBoard._id;
-
-        data.boards.push(newBoard);
-
-        // Use custom columns if provided, otherwise create defaults
-        let columnsToCreate;
-        if (boardData.columns && boardData.columns.length > 0) {
-            columnsToCreate = boardData.columns.map((col, index) => ({
-                id: generateId(),
-                _id: generateId(),
-                title: col.title,
-                boardId: newBoard.id,
-                order: index,
-                color: col.color || 'var(--column-todo)'
-            }));
-            columnsToCreate.forEach(c => { c.id = c._id; });
-        } else {
-            // Default columns
-            columnsToCreate = [
-                { id: generateId(), title: 'To Do', boardId: newBoard.id, order: 0, color: 'var(--column-todo)', _id: generateId() },
-                { id: generateId(), title: 'In Progress', boardId: newBoard.id, order: 1, color: 'var(--column-progress)', _id: generateId() },
-                { id: generateId(), title: 'Done', boardId: newBoard.id, order: 2, color: 'var(--column-done)', _id: generateId() }
-            ];
-            columnsToCreate.forEach(c => { c.id = c._id; });
-        }
-
-        data.columns.push(...columnsToCreate);
-        saveData(data);
-        return newBoard;
+        const response = await fetch(`${API_URL}/boards`, {
+            method: 'POST',
+            headers: getHeaders(),
+            body: JSON.stringify({
+                title: boardData.title,
+                description: boardData.description,
+                columns: boardData.columns, // Optional, backend has defaults
+                tags: boardData.tags
+            })
+        });
+        return handleResponse(response);
     },
 
     delete: async (id) => {
-        await delay();
-        const data = getData();
-        const index = data.boards.findIndex(b => b.id === id || b._id === id);
-        if (index === -1) throw new Error('Board not found');
-        data.boards.splice(index, 1);
-        saveData(data);
-        return { success: true };
+        const response = await fetch(`${API_URL}/boards/${id}`, {
+            method: 'DELETE',
+            headers: getHeaders()
+        });
+        return handleResponse(response);
     }
 };
 
 // --- Column API ---
+// Columns are embedded in Board, so we update the board to manage columns
 export const columnApi = {
     create: async (columnData) => {
-        await delay();
-        const data = getData();
+        // 1. Get current board
+        const { board } = await boardApi.getById(columnData.boardId);
 
-        // Find max order for the board
-        const boardColumns = data.columns.filter(c => c.boardId === columnData.boardId);
-        const maxOrder = boardColumns.length > 0
-            ? Math.max(...boardColumns.map(c => c.order)) + 1
-            : 0;
-
+        // 2. Prepare new column
         const newColumn = {
-            id: generateId(),
-            _id: generateId(),
             title: columnData.title,
-            boardId: columnData.boardId,
-            order: columnData.order ?? maxOrder,
+            order: columnData.order ?? (board.columns.length > 0 ? Math.max(...board.columns.map(c => c.order)) + 1 : 0),
             color: columnData.color || 'var(--column-todo)'
         };
-        newColumn.id = newColumn._id;
 
-        data.columns.push(newColumn);
-        saveData(data);
-        return newColumn;
+        // 3. Update board with new columns list
+        const updatedColumns = [...board.columns, newColumn];
+
+        const response = await fetch(`${API_URL}/boards/${columnData.boardId}`, {
+            method: 'PUT',
+            headers: getHeaders(),
+            body: JSON.stringify({
+                ...board,
+                columns: updatedColumns
+            })
+        });
+
+        const updatedBoard = await handleResponse(response);
+        // Return the created column (last one in the list usually, but safer to find by properties or take last)
+        return updatedBoard.columns[updatedBoard.columns.length - 1];
     },
 
     update: async (id, updates) => {
-        await delay();
-        const data = getData();
-        const index = data.columns.findIndex(c => c.id === id || c._id === id);
-        if (index === -1) throw new Error('Column not found');
+        const { boardId, ...columnUpdates } = updates;
+        if (!boardId) throw new Error('boardId is required for column update');
 
-        data.columns[index] = { ...data.columns[index], ...updates };
-        saveData(data);
-        return data.columns[index];
-    },
+        const { board } = await boardApi.getById(boardId);
 
-    delete: async (id, moveTasksToColumnId = null) => {
-        await delay();
-        const data = getData();
-        const columnIndex = data.columns.findIndex(c => c.id === id || c._id === id);
+        const columnIndex = board.columns.findIndex(c => c.id === id || c._id === id);
         if (columnIndex === -1) throw new Error('Column not found');
 
-        const column = data.columns[columnIndex];
+        const updatedColumn = { ...board.columns[columnIndex], ...columnUpdates };
+        const updatedColumns = [...board.columns];
+        updatedColumns[columnIndex] = updatedColumn;
 
-        // Handle tasks in the column
-        if (moveTasksToColumnId) {
-            // Move tasks to another column
-            data.tasks.forEach(task => {
-                if (task.columnId === id || task.columnId === column._id) {
-                    task.columnId = moveTasksToColumnId;
-                }
-            });
-        } else {
-            // Delete tasks in this column
-            data.tasks = data.tasks.filter(t => t.columnId !== id && t.columnId !== column._id);
-        }
+        const response = await fetch(`${API_URL}/boards/${boardId}`, {
+            method: 'PUT',
+            headers: getHeaders(),
+            body: JSON.stringify({
+                ...board,
+                columns: updatedColumns
+            })
+        });
 
-        // Remove the column
-        data.columns.splice(columnIndex, 1);
-        saveData(data);
-        return { success: true };
+        const updatedBoard = await handleResponse(response);
+        return updatedBoard.columns.find(c => c.id === id || c._id === id);
+    },
+
+    delete: async (id, boardId) => {
+        if (!boardId) throw new Error('boardId is required for column deletion');
+
+        const { board } = await boardApi.getById(boardId);
+        const updatedColumns = board.columns.filter(c => c.id !== id && c._id !== id);
+
+        const response = await fetch(`${API_URL}/boards/${boardId}`, {
+            method: 'PUT',
+            headers: getHeaders(),
+            body: JSON.stringify({
+                ...board,
+                columns: updatedColumns
+            })
+        });
+
+        return handleResponse(response);
     }
 };
 
 // --- Task API ---
 export const taskApi = {
     create: async (taskData) => {
-        await delay();
-        const data = getData();
-        const newTask = {
-            id: generateId(),
-            _id: generateId(),
-            ...taskData,
-            tags: taskData.tags || [],
-            createdAt: new Date().toISOString(),
-            comments: []
-        };
-        newTask.id = newTask._id;
-
-        // Auto-add new tags to taskTags storage
-        if (newTask.tags && newTask.tags.length > 0) {
-            if (!data.taskTags) data.taskTags = [];
-            newTask.tags.forEach(tag => {
-                if (!data.taskTags.includes(tag)) {
-                    data.taskTags.push(tag);
-                }
-            });
-        }
-
-        data.tasks.push(newTask);
-        saveData(data);
-        return newTask;
+        const response = await fetch(`${API_URL}/tasks`, {
+            method: 'POST',
+            headers: getHeaders(),
+            body: JSON.stringify(taskData)
+        });
+        return handleResponse(response);
     },
 
     update: async (id, updates) => {
-        await delay();
-        const data = getData();
-        const index = data.tasks.findIndex(t => t.id === id || t._id === id);
-        if (index === -1) throw new Error('Task not found');
-
-        // Auto-add new tags to taskTags storage
-        if (updates.tags && updates.tags.length > 0) {
-            if (!data.taskTags) data.taskTags = [];
-            updates.tags.forEach(tag => {
-                if (!data.taskTags.includes(tag)) {
-                    data.taskTags.push(tag);
-                }
-            });
-        }
-
-        const updatedTask = { ...data.tasks[index], ...updates, updatedAt: new Date().toISOString() };
-        data.tasks[index] = updatedTask;
-        saveData(data);
-        return updatedTask;
+        const response = await fetch(`${API_URL}/tasks/${id}`, {
+            method: 'PUT',
+            headers: getHeaders(),
+            body: JSON.stringify(updates)
+        });
+        return handleResponse(response);
     },
 
     delete: async (id) => {
-        await delay();
-        const data = getData();
-        data.tasks = data.tasks.filter(t => t.id !== id && t._id !== id);
-        saveData(data);
-        return { success: true };
+        const response = await fetch(`${API_URL}/tasks/${id}`, {
+            method: 'DELETE',
+            headers: getHeaders()
+        });
+        return handleResponse(response);
     },
 
     move: async (id, { columnId, order }) => {
-        await delay();
-        const data = getData();
-        const task = data.tasks.find(t => t.id === id || t._id === id);
-        if (!task) throw new Error('Task not found');
-
-        task.columnId = columnId;
-        task.order = order; // Simplified reordering
-        saveData(data);
-        return task;
+        const response = await fetch(`${API_URL}/tasks/${id}/move`, {
+            method: 'PUT',
+            headers: getHeaders(),
+            body: JSON.stringify({ columnId, order })
+        });
+        return handleResponse(response);
     },
 
     getById: async (id) => {
-        await delay();
-        const data = getData();
-        const task = data.tasks.find(t => t.id === id || t._id === id);
-        if (!task) throw new Error('Task not found');
-        return task;
+        // Backend doesn't have GET /tasks/:id but we can probably live without it or add it?
+        // Task.js routes has PUT /:id, DELETE /:id.
+        // It DOES NOT have GET /:id.
+        // But `boardApi.getById` returns tasks. 
+        // `taskApi.getById` was used in mock. Let's see if it's used in Frontend.
+        // It is NOT used in BoardPage.jsx. check other files?
+        return {}; // Placeholder
+    },
+
+    addComment: async (taskId, text) => {
+        const response = await fetch(`${API_URL}/tasks/${taskId}/comments`, {
+            method: 'POST',
+            headers: getHeaders(),
+            body: JSON.stringify({ text })
+        });
+        return handleResponse(response);
     }
 };
 
 // --- Tag API ---
 export const tagApi = {
     getAll: async () => {
-        await delay(100);
-        const data = getData();
-        return data.taskTags || [];
+        const response = await fetch(`${API_URL}/tasks/tags`, {
+            headers: getHeaders()
+        });
+        return handleResponse(response);
     }
 };
+

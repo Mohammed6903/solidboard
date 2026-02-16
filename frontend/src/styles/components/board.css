@@ -182,10 +182,77 @@
     }
 }
 
-/* Mobile optimizations */
+/* Tablet */
+@media (max-width: 1024px) {
+    .board-header__username {
+        display: none;
+    }
+
+    .board-header__back-btn span {
+        display: none;
+    }
+
+    .filter-bar {
+        gap: var(--space-sm);
+        padding: var(--space-sm) var(--space-md);
+    }
+
+    .filter-bar__search {
+        min-width: 150px;
+    }
+}
+
+/* Mobile */
 @media (max-width: 768px) {
     .board-header {
-        padding: 0 var(--space-md);
+        padding: 0 var(--space-sm);
+        height: 52px;
+        gap: var(--space-xs);
+    }
+
+    .board-header__left {
+        gap: var(--space-xs);
+    }
+
+    .board-header__title {
+        font-size: var(--font-size-md);
+        max-width: 140px;
+    }
+
+    .board-header__right {
+        gap: var(--space-xs);
+    }
+
+    .board-header__divider {
+        display: none;
+    }
+
+    .board-header__back-btn {
+        padding: 6px 8px;
+        font-size: 0.8rem;
+    }
+
+    .board-header__back-btn span {
+        display: none;
+    }
+
+    .board-header__avatar {
+        width: 28px;
+        height: 28px;
+        font-size: 0.7rem;
+    }
+
+    .board-header__username {
+        display: none;
+    }
+
+    .board-header__logout-btn {
+        padding: 6px 8px;
+        font-size: 0.8rem;
+    }
+
+    .board-header__logout-btn span {
+        display: none;
     }
 
     .board {
@@ -196,11 +263,78 @@
 
     .column {
         flex: 0 0 85vw;
-        /* Show peeking of next column */
         min-width: 85vw;
         max-width: 85vw;
         scroll-snap-align: center;
-        /* Center focus on mobile */
+    }
+
+    .filter-bar {
+        flex-direction: column;
+        align-items: stretch;
+        gap: var(--space-sm);
+        padding: var(--space-sm);
+    }
+
+    .filter-bar__search {
+        min-width: 100%;
+    }
+
+    .filter-bar__filters {
+        overflow-x: auto;
+        flex-wrap: nowrap;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+    }
+
+    .filter-bar__filters::-webkit-scrollbar {
+        display: none;
+    }
+
+    .filter-bar__filter {
+        white-space: nowrap;
+        flex-shrink: 0;
+    }
+
+    .filter-bar__tag-filter {
+        margin-left: 0;
+        width: 100%;
+    }
+
+    .filter-bar__tag-select {
+        width: 100%;
+    }
+
+    .column--add {
+        min-width: 85vw;
+        max-width: 85vw;
+        min-height: 150px;
+    }
+
+    .column__add-form {
+        margin: 0 4px 4px;
+        padding: 6px;
+    }
+
+    .column__task-details {
+        grid-template-columns: 1fr;
+    }
+
+    .column__actions {
+        opacity: 1;
+    }
+}
+
+/* Small phone */
+@media (max-width: 400px) {
+    .column {
+        flex: 0 0 92vw;
+        min-width: 92vw;
+        max-width: 92vw;
+    }
+
+    .column--add {
+        min-width: 92vw;
+        max-width: 92vw;
     }
 }
 

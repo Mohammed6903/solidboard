@@ -8,20 +8,20 @@ import '../styles/pages/boards-list.css';
 // Column presets
 const COLUMN_PRESETS = {
     kanban: [
-        { title: 'To Do', color: 'var(--column-todo)' },
-        { title: 'In Progress', color: 'var(--column-progress)' },
-        { title: 'Done', color: 'var(--column-done)' }
+        { title: 'To Do', order: 0, color: 'var(--column-todo)' },
+        { title: 'In Progress', order: 1, color: 'var(--column-progress)' },
+        { title: 'Done', order: 2, color: 'var(--column-done)' }
     ],
     scrum: [
-        { title: 'Backlog', color: 'var(--column-todo)' },
-        { title: 'Sprint', color: 'var(--column-todo)' },
-        { title: 'In Progress', color: 'var(--column-progress)' },
-        { title: 'Review', color: 'var(--column-review)' },
-        { title: 'Done', color: 'var(--column-done)' }
+        { title: 'Backlog', order: 0, color: 'var(--column-todo)' },
+        { title: 'Sprint', order: 1, color: 'var(--column-todo)' },
+        { title: 'In Progress', order: 2, color: 'var(--column-progress)' },
+        { title: 'Review', order: 3, color: 'var(--column-review)' },
+        { title: 'Done', order: 4, color: 'var(--column-done)' }
     ],
     simple: [
-        { title: 'Tasks', color: 'var(--column-todo)' },
-        { title: 'Completed', color: 'var(--column-done)' }
+        { title: 'Tasks', order: 0, color: 'var(--column-todo)' },
+        { title: 'Completed', order: 1, color: 'var(--column-done)' }
     ]
 };
 
@@ -69,6 +69,12 @@ export default function BoardsListPage() {
             } else {
                 columns = COLUMN_PRESETS[selectedPreset()];
             }
+
+            // Ensure every column has an order field
+            columns = columns.map((col, index) => ({
+                ...col,
+                order: col.order ?? index
+            }));
 
             const newBoard = await boardApi.create({
                 title: newBoardTitle(),

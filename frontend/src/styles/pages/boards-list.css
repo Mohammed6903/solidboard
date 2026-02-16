@@ -43,6 +43,7 @@
     color: var(--text-primary);
     font-size: var(--font-size-md);
     max-width: 400px;
+    width: 100%;
 }
 
 .boards-search:focus {
@@ -153,9 +154,7 @@
 
 .board-card--create:hover {
     background: rgba(255, 255, 255, 0.05);
-    /* Slightly lighter on hover */
     transform: none;
-    /* Don't lift the create card */
 }
 
 .board-title {
@@ -178,6 +177,7 @@
     border: 1px solid var(--border-default);
     background: rgba(0, 0, 0, 0.3);
     color: var(--text-primary);
+    font-family: inherit;
 }
 
 .board-input:focus {
@@ -284,6 +284,7 @@
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: var(--radius-sm);
     color: var(--text-primary);
+    font-family: inherit;
 }
 
 .custom-column-input:focus {
@@ -347,4 +348,78 @@
 .add-column-btn:hover {
     background: rgba(99, 102, 241, 0.2);
     border-style: solid;
+}
+
+/* ====== Responsive — Boards List ====== */
+@media (max-width: 768px) {
+    .boards-header {
+        height: 64px;
+        padding: 0 var(--space-md);
+    }
+
+    .boards-header h1 {
+        font-size: var(--font-size-xl);
+    }
+
+    .boards-container {
+        padding: var(--space-md);
+    }
+
+    .boards-filters {
+        padding: var(--space-md);
+    }
+
+    .boards-search {
+        max-width: 100%;
+    }
+
+    .boards-grid {
+        grid-template-columns: 1fr;
+        gap: var(--space-md);
+    }
+
+    .board-card {
+        min-height: 150px;
+        padding: var(--space-lg);
+    }
+
+    .board-card__delete {
+        opacity: 1;
+    }
+
+    .preset-buttons {
+        gap: 4px;
+    }
+
+    .preset-btn {
+        padding: 5px 10px;
+        font-size: 0.7rem;
+    }
+
+    .custom-column-row {
+        flex-wrap: wrap;
+    }
+
+    .custom-column-color {
+        width: 100%;
+    }
+}
+
+@media (max-width: 480px) {
+    .boards-header {
+        height: 56px;
+    }
+
+    .boards-filters {
+        padding: var(--space-sm);
+    }
+
+    .board-card {
+        min-height: 130px;
+        padding: var(--space-md);
+    }
+
+    .board-card--create h3 {
+        font-size: 1rem;
+    }
 }

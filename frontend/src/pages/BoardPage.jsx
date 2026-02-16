@@ -53,9 +53,21 @@ export default function BoardPage() {
             setBoard(boardData);
             setTasks(boardTasks);
 
-            // Load available tags
-            const tags = await tagApi.getAll();
-            setAvailableTags(tags);
+            // Load available tags from API and from current board tasks
+            let apiTags = [];
+            try {
+                apiTags = await tagApi.getAll();
+            } catch (e) {
+                // Tags endpoint might fail, that's okay
+            }
+
+            // Also extract tags from the loaded tasks
+            const localTags = new Set(apiTags);
+            boardTasks.forEach(task => {
+                const taskTags = task.labels || task.tags || [];
+                taskTags.forEach(tag => localTags.add(tag));
+            });
+            setAvailableTags(Array.from(localTags).sort());
         } catch (err) {
             setError(err.message);
             console.error('Failed to load board:', err);
@@ -102,7 +114,10 @@ export default function BoardPage() {
 
         // Filter by tag
         if (tagFilter() !== 'all') {
-            result = result.filter(t => t.tags && t.tags.includes(tagFilter()));
+            result = result.filter(t => {
+                const taskTags = t.labels || t.tags || [];
+                return taskTags.includes(tagFilter());
+            });
         }
 
         return result;
@@ -167,7 +182,7 @@ export default function BoardPage() {
         setSavingTask(true);
         try {
             const taskData = {
-                boardId: board()?.id || board()?._id,
+                boardId: board()?._id || board()?.id,
                 columnId,
                 title,
                 description: newTaskDescription().trim(),
@@ -185,8 +200,12 @@ export default function BoardPage() {
             setTasks(prev => [...prev, newTask]);
 
             // Refresh available tags in case new ones were added
-            const updatedTags = await tagApi.getAll();
-            setAvailableTags(updatedTags);
+            const createdTaskTags = newTask.labels || newTask.tags || [];
+            if (createdTaskTags.length > 0) {
+                const currentTags = new Set(availableTags());
+                createdTaskTags.forEach(tag => currentTags.add(tag));
+                setAvailableTags(Array.from(currentTags).sort());
+            }
 
             resetTaskForm();
             announce(`Task "${title}" created`);
@@ -307,7 +326,10 @@ export default function BoardPage() {
         setEditingColumnTitle('');
 
         try {
-            await columnApi.update(columnId, { title: newTitle });
+            await columnApi.update(columnId, {
+                title: newTitle,
+                boardId: board().id || board()._id
+            });
 
             // Update local board state with the captured title
             setBoard({
@@ -328,8 +350,6 @@ export default function BoardPage() {
     const handleDeleteColumn = async (columnId) => {
         const column = board()?.columns.find(c => c.id === columnId || c._id === columnId);
         const tasksInColumn = getColumnTasks(columnId);
-        console.log("Hello")
-
 
         let confirmMessage = `Delete column "${column?.title}"?`;
         if (tasksInColumn.length > 0) {
@@ -339,9 +359,7 @@ export default function BoardPage() {
         if (!confirm(confirmMessage)) return;
 
         try {
-            await columnApi.delete(columnId);
-            console.log("Hello")
-
+            await columnApi.delete(columnId, board().id || board()._id);
 
             // Update local state
             setBoard({
@@ -535,237 +553,241 @@ export default function BoardPage() {
             }>
                 <main class="board" role="region" aria-label="Kanban board columns">
                     <Index each={board()?.columns || []}>
-                        {(column, columnIndex) => (
-                            <div
-                                class={`column ${getDragState().draggedId && getDragState().draggedType === 'task' ? 'column--droppable' : ''}`}
-                                onDragOver={handleDragOver}
-                                onDrop={(e) => handleDrop(e, column().id)}
-                            >
-                                <div class="column__header">
-                                    <Show when={editingColumnId() === (column().id || column()._id)} fallback={
-                                        <h2 class="column__title">
-                                            <span
-                                                class="column__color"
-                                                style={{ background: column().color }}
-                                            ></span>
-                                            <span
-                                                class="column__title-text"
-                                                onDblClick={() => startEditingColumn(column())}
-                                                title="Double-click to rename"
-                                            >
-                                                {column().title}
-                                            </span>
-                                            <span class="column__count">
-                                                {getColumnTasks(column().id).length}
-                                            </span>
-                                        </h2>
-                                    }>
-                                        <div class="column__title-edit">
-                                            <input
-                                                type="text"
-                                                class="column__title-input"
-                                                value={editingColumnTitle()}
-                                                onInput={(e) => setEditingColumnTitle(e.target.value)}
-                                                onKeyDown={(e) => {
-                                                    if (e.key === 'Enter') {
-                                                        e.preventDefault();
-                                                        handleRenameColumn(column().id || column()._id);
-                                                    }
-                                                    if (e.key === 'Escape') {
-                                                        setEditingColumnId(null);
-                                                        setEditingColumnTitle('');
-                                                    }
-                                                }}
-                                                onBlur={() => handleRenameColumn(column().id || column()._id)}
-                                                ref={(el) => { if (el) { el.focus(); el.select(); } }}
-                                            />
-                                        </div>
-                                    </Show>
-                                    <div class="column__actions">
-                                        <button
-                                            class="column__action-btn"
-                                            onClick={(e) => { e.stopPropagation(); startEditingColumn(column()); }}
-                                            title="Rename column"
-                                        >
-                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                                            </svg>
-                                        </button>
-                                        <button
-                                            class="column__action-btn column__action-btn--danger"
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                handleDeleteColumn(column().id || column()._id);
-                                            }}
-                                            title="Delete column"
-                                        >
-                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                                <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                                            </svg>
-                                        </button>
-                                    </div>
-                                </div>
-
-                                <div class="column__tasks">
-                                    <For each={getColumnTasks(column().id)}>
-                                        {(task, index) => (
-                                            <TaskCard
-                                                task={task}
-                                                index={index()}
-                                                columnId={column().id}
-                                                onDelete={() => handleDeleteTask(task._id)}
-                                            />
-                                        )}
-                                    </For>
-                                </div>
-
-
-                                {/* Enhanced Add Task Area */}
-                                <Show when={addingTaskColumnId() === column().id} fallback={
-                                    <button
-                                        class="column__add-btn"
-                                        onClick={() => setAddingTaskColumnId(column().id)}
-                                    >
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                            <path d="M12 5v14M5 12h14" />
-                                        </svg>
-                                        Create Task
-                                    </button>
-                                }>
-                                    <div class="column__add-form glass">
-                                        <input
-                                            ref={taskInputRef}
-                                            type="text"
-                                            class="column__task-input"
-                                            placeholder="Task title *"
-                                            value={newTaskTitle()}
-                                            onInput={(e) => setNewTaskTitle(e.target.value)}
-                                            onKeyDown={(e) => {
-                                                if (e.key === 'Enter' && !e.shiftKey) {
-                                                    e.preventDefault();
-                                                    handleAddTask(column().id);
-                                                } else if (e.key === 'Escape') {
-                                                    resetTaskForm();
-                                                }
-                                            }}
-                                            disabled={savingTask()}
-                                        />
-                                        <textarea
-                                            class="column__task-textarea"
-                                            placeholder="Description (optional)"
-                                            value={newTaskDescription()}
-                                            onInput={(e) => setNewTaskDescription(e.target.value)}
-                                            disabled={savingTask()}
-                                            rows="2"
-                                        />
-                                        <div class="column__task-details">
-                                            <select
-                                                class="column__task-select"
-                                                value={newTaskPriority()}
-                                                onChange={(e) => setNewTaskPriority(e.target.value)}
-                                                disabled={savingTask()}
-                                            >
-                                                <option value="low">Low Priority</option>
-                                                <option value="medium">Medium Priority</option>
-                                                <option value="high">High Priority</option>
-                                                <option value="urgent">Urgent</option>
-                                            </select>
-                                            <input
-                                                type="date"
-                                                class="column__task-date"
-                                                value={newTaskDueDate()}
-                                                onInput={(e) => setNewTaskDueDate(e.target.value)}
-                                                disabled={savingTask()}
-                                                placeholder="Due date"
-                                            />
-                                        </div>
-
-                                        {/* Tag Input Combobox */}
-                                        <div class="column__tag-input-wrapper">
-                                            <div class="column__selected-tags">
-                                                <For each={newTaskTags()}>
-                                                    {(tag) => (
-                                                        <span class="column__tag-pill">
-                                                            {tag}
-                                                            <button
-                                                                type="button"
-                                                                class="column__tag-remove"
-                                                                onClick={() => removeTagFromTask(tag)}
-                                                            >×</button>
-                                                        </span>
-                                                    )}
-                                                </For>
-                                            </div>
-                                            <div class="column__tag-combobox">
+                        {(column, columnIndex) => {
+                            const columnId = column()._id || column().id;
+                            return (
+                                <div
+                                    class={`column ${getDragState().draggedId && getDragState().draggedType === 'task' ? 'column--droppable' : ''}`}
+                                    onDragOver={handleDragOver}
+                                    onDrop={(e) => handleDrop(e, columnId)}
+                                >
+                                    <div class="column__header">
+                                        <Show when={editingColumnId() === columnId} fallback={
+                                            <h2 class="column__title">
+                                                <span
+                                                    class="column__color"
+                                                    style={{ background: column().color }}
+                                                ></span>
+                                                <span
+                                                    class="column__title-text"
+                                                    onDblClick={() => startEditingColumn(column())}
+                                                    title="Double-click to rename"
+                                                >
+                                                    {column().title}
+                                                </span>
+                                                <span class="column__count">
+                                                    {getColumnTasks(columnId).length}
+                                                </span>
+                                            </h2>
+                                        }>
+                                            <div class="column__title-edit">
                                                 <input
                                                     type="text"
-                                                    class="column__tag-input"
-                                                    placeholder={newTaskTags().length > 0 ? "Add another tag..." : "Add tags..."}
-                                                    value={tagInput()}
-                                                    onInput={(e) => {
-                                                        setTagInput(e.target.value);
-                                                        setShowTagDropdown(true);
-                                                    }}
-                                                    onFocus={() => setShowTagDropdown(true)}
+                                                    class="column__title-input"
+                                                    value={editingColumnTitle()}
+                                                    onInput={(e) => setEditingColumnTitle(e.target.value)}
                                                     onKeyDown={(e) => {
-                                                        if (e.key === 'Enter' && tagInput().trim()) {
+                                                        if (e.key === 'Enter') {
                                                             e.preventDefault();
-                                                            addTagToTask(tagInput());
-                                                        } else if (e.key === 'Escape') {
-                                                            setShowTagDropdown(false);
+                                                            handleRenameColumn(columnId);
+                                                        }
+                                                        if (e.key === 'Escape') {
+                                                            setEditingColumnId(null);
+                                                            setEditingColumnTitle('');
                                                         }
                                                     }}
-                                                    disabled={savingTask()}
+                                                    onBlur={() => handleRenameColumn(columnId)}
+                                                    ref={(el) => { if (el) { el.focus(); el.select(); } }}
                                                 />
-                                                <Show when={showTagDropdown() && (getFilteredTagSuggestions().length > 0 || tagInput().trim())}>
-                                                    <div class="column__tag-dropdown">
-                                                        <For each={getFilteredTagSuggestions()}>
-                                                            {(tag) => (
-                                                                <button
-                                                                    type="button"
-                                                                    class="column__tag-option"
-                                                                    onClick={() => addTagToTask(tag)}
-                                                                >
-                                                                    {tag}
-                                                                </button>
-                                                            )}
-                                                        </For>
-                                                        <Show when={tagInput().trim() && !availableTags().includes(tagInput().trim())}>
-                                                            <button
-                                                                type="button"
-                                                                class="column__tag-option column__tag-option--new"
-                                                                onClick={() => addTagToTask(tagInput())}
-                                                            >
-                                                                + Create "{tagInput().trim()}"
-                                                            </button>
-                                                        </Show>
-                                                    </div>
-                                                </Show>
                                             </div>
-                                        </div>
-
-                                        <div class="column__add-actions">
-                                            <Button
-                                                size="sm"
-                                                onClick={() => handleAddTask(column().id)}
-                                                disabled={savingTask() || !newTaskTitle().trim()}
+                                        </Show>
+                                        <div class="column__actions">
+                                            <button
+                                                class="column__action-btn"
+                                                onClick={(e) => { e.stopPropagation(); startEditingColumn(column()); }}
+                                                title="Rename column"
                                             >
-                                                {savingTask() ? 'Adding...' : 'Add Task'}
-                                            </Button>
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                onClick={resetTaskForm}
-                                                disabled={savingTask()}
+                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                                                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                                                </svg>
+                                            </button>
+                                            <button
+                                                class="column__action-btn column__action-btn--danger"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleDeleteColumn(columnId);
+                                                }}
+                                                title="Delete column"
                                             >
-                                                Cancel
-                                            </Button>
+                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                    <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                                                </svg>
+                                            </button>
                                         </div>
                                     </div>
-                                </Show>
-                            </div>
-                        )}
+
+                                    <div class="column__tasks">
+                                        <For each={getColumnTasks(columnId)}>
+                                            {(task, index) => (
+                                                <TaskCard
+                                                    task={task}
+                                                    index={index()}
+                                                    columnId={columnId}
+                                                    onDelete={() => handleDeleteTask(task._id)}
+                                                />
+                                            )}
+                                        </For>
+                                    </div>
+
+
+                                    {/* Enhanced Add Task Area */}
+                                    <Show when={addingTaskColumnId() === columnId} fallback={
+                                        <button
+                                            class="column__add-btn"
+                                            onClick={() => setAddingTaskColumnId(columnId)}
+                                        >
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <path d="M12 5v14M5 12h14" />
+                                            </svg>
+                                            Create Task
+                                        </button>
+                                    }>
+                                        <div class="column__add-form glass">
+                                            <input
+                                                ref={taskInputRef}
+                                                type="text"
+                                                class="column__task-input"
+                                                placeholder="Task title *"
+                                                value={newTaskTitle()}
+                                                onInput={(e) => setNewTaskTitle(e.target.value)}
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter' && !e.shiftKey) {
+                                                        e.preventDefault();
+                                                        handleAddTask(columnId);
+                                                    } else if (e.key === 'Escape') {
+                                                        resetTaskForm();
+                                                    }
+                                                }}
+                                                disabled={savingTask()}
+                                            />
+                                            <textarea
+                                                class="column__task-textarea"
+                                                placeholder="Description (optional)"
+                                                value={newTaskDescription()}
+                                                onInput={(e) => setNewTaskDescription(e.target.value)}
+                                                disabled={savingTask()}
+                                                rows="2"
+                                            />
+                                            <div class="column__task-details">
+                                                <select
+                                                    class="column__task-select"
+                                                    value={newTaskPriority()}
+                                                    onChange={(e) => setNewTaskPriority(e.target.value)}
+                                                    disabled={savingTask()}
+                                                >
+                                                    <option value="low">Low Priority</option>
+                                                    <option value="medium">Medium Priority</option>
+                                                    <option value="high">High Priority</option>
+                                                    <option value="urgent">Urgent</option>
+                                                </select>
+                                                <input
+                                                    type="date"
+                                                    class="column__task-date"
+                                                    value={newTaskDueDate()}
+                                                    onInput={(e) => setNewTaskDueDate(e.target.value)}
+                                                    disabled={savingTask()}
+                                                    placeholder="Due date"
+                                                />
+                                            </div>
+
+                                            {/* Tag Input Combobox */}
+                                            <div class="column__tag-input-wrapper">
+                                                <div class="column__selected-tags">
+                                                    <For each={newTaskTags()}>
+                                                        {(tag) => (
+                                                            <span class="column__tag-pill">
+                                                                {tag}
+                                                                <button
+                                                                    type="button"
+                                                                    class="column__tag-remove"
+                                                                    onClick={() => removeTagFromTask(tag)}
+                                                                >×</button>
+                                                            </span>
+                                                        )}
+                                                    </For>
+                                                </div>
+                                                <div class="column__tag-combobox">
+                                                    <input
+                                                        type="text"
+                                                        class="column__tag-input"
+                                                        placeholder={newTaskTags().length > 0 ? "Add another tag..." : "Add tags..."}
+                                                        value={tagInput()}
+                                                        onInput={(e) => {
+                                                            setTagInput(e.target.value);
+                                                            setShowTagDropdown(true);
+                                                        }}
+                                                        onFocus={() => setShowTagDropdown(true)}
+                                                        onKeyDown={(e) => {
+                                                            if (e.key === 'Enter' && tagInput().trim()) {
+                                                                e.preventDefault();
+                                                                addTagToTask(tagInput());
+                                                            } else if (e.key === 'Escape') {
+                                                                setShowTagDropdown(false);
+                                                            }
+                                                        }}
+                                                        disabled={savingTask()}
+                                                    />
+                                                    <Show when={showTagDropdown() && (getFilteredTagSuggestions().length > 0 || tagInput().trim())}>
+                                                        <div class="column__tag-dropdown">
+                                                            <For each={getFilteredTagSuggestions()}>
+                                                                {(tag) => (
+                                                                    <button
+                                                                        type="button"
+                                                                        class="column__tag-option"
+                                                                        onClick={() => addTagToTask(tag)}
+                                                                    >
+                                                                        {tag}
+                                                                    </button>
+                                                                )}
+                                                            </For>
+                                                            <Show when={tagInput().trim() && !availableTags().includes(tagInput().trim())}>
+                                                                <button
+                                                                    type="button"
+                                                                    class="column__tag-option column__tag-option--new"
+                                                                    onClick={() => addTagToTask(tagInput())}
+                                                                >
+                                                                    + Create "{tagInput().trim()}"
+                                                                </button>
+                                                            </Show>
+                                                        </div>
+                                                    </Show>
+                                                </div>
+                                            </div>
+
+                                            <div class="column__add-actions">
+                                                <Button
+                                                    size="sm"
+                                                    onClick={() => handleAddTask(columnId)}
+                                                    disabled={savingTask() || !newTaskTitle().trim()}
+                                                >
+                                                    {savingTask() ? 'Adding...' : 'Add Task'}
+                                                </Button>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={resetTaskForm}
+                                                    disabled={savingTask()}
+                                                >
+                                                    Cancel
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    </Show>
+                                </div>
+                            );
+                        }
+                        }
                     </Index>
 
                     {/* Add Column Card */}
@@ -816,7 +838,7 @@ export default function BoardPage() {
                     </div>
                 </main>
             </Show>
-            <TaskModal onTaskUpdated={loadBoardData} />
+            <TaskModal tasks={tasks()} availableTags={availableTags()} onTaskUpdated={loadBoardData} />
         </div>
     );
 }
