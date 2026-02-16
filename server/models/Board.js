@@ -36,6 +36,10 @@ const boardSchema = new mongoose.Schema({
             { title: 'Done', order: 4, color: 'var(--column-done)' },
         ],
     },
+    tags: [{
+        type: String,
+        trim: true,
+    }],
 }, {
     timestamps: true,
 });

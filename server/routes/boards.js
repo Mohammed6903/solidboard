@@ -48,6 +48,7 @@ router.post('/', async (req, res) => {
             title: req.body.title || 'My Board',
             owner: req.user._id,
             columns: req.body.columns,
+            tags: req.body.tags || [],
         });
 
         res.status(201).json(board);
@@ -62,7 +63,7 @@ router.put('/:id', async (req, res) => {
     try {
         const board = await Board.findOneAndUpdate(
             { _id: req.params.id, owner: req.user._id },
-            { title: req.body.title, columns: req.body.columns },
+            { title: req.body.title, columns: req.body.columns, tags: req.body.tags },
             { new: true, runValidators: true }
         );
 

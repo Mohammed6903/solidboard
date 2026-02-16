@@ -14,6 +14,31 @@ const verifyBoardAccess = async (boardId, userId) => {
     return board;
 };
 
+// @route   GET /api/tasks/tags
+// @desc    Get all unique tags from user's tasks
+router.get('/tags', async (req, res) => {
+    try {
+        // Get all boards owned by user
+        const boards = await Board.find({ owner: req.user._id });
+        const boardIds = boards.map(b => b._id);
+
+        // Get all tasks from user's boards
+        const tasks = await Task.find({ board: { $in: boardIds } });
+
+        // Extract unique tags
+        const tagsSet = new Set();
+        tasks.forEach(task => {
+            if (task.labels && Array.isArray(task.labels)) {
+                task.labels.forEach(label => tagsSet.add(label));
+            }
+        });
+
+        res.json(Array.from(tagsSet).sort());
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
+
 // @route   GET /api/tasks/board/:boardId
 // @desc    Get all tasks for a board
 router.get('/board/:boardId', async (req, res) => {
@@ -38,7 +63,7 @@ router.get('/board/:boardId', async (req, res) => {
 // @desc    Create new task
 router.post('/', async (req, res) => {
     try {
-        const { boardId, columnId, title, description, priority, labels, assignee, dueDate } = req.body;
+        const { boardId, columnId, title, description, priority, labels, tags, assignee, dueDate } = req.body;
 
         const board = await verifyBoardAccess(boardId, req.user._id);
         if (!board) {
@@ -57,7 +82,7 @@ router.post('/', async (req, res) => {
             columnId,
             order,
             priority: priority || 'medium',
-            labels: labels || [],
+            labels: labels || tags || [],
             assignee,
             dueDate,
         });
@@ -85,11 +110,11 @@ router.put('/:id', async (req, res) => {
             return res.status(403).json({ message: 'Access denied' });
         }
 
-        const { title, description, priority, labels, assignee, dueDate } = req.body;
+        const { title, description, priority, labels, tags, assignee, dueDate } = req.body;
 
         const updatedTask = await Task.findByIdAndUpdate(
             req.params.id,
-            { title, description, priority, labels, assignee, dueDate },
+            { title, description, priority, labels: labels || tags, assignee, dueDate },
             { new: true, runValidators: true }
         ).populate('assignee', 'name email avatar color')
             .populate('comments.user', 'name email avatar color');
