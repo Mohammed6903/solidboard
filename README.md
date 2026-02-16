@@ -2,7 +2,7 @@
   <img src="frontend/screenshots/board-view.png" alt="Kanban Board" width="100%">
 </p>
 
-<h1 align="center">🚀 SolidBoard - Modern Kanban Task Manager</h1>
+<h1 align="center">SolidBoard - Modern Kanban Task Manager</h1>
 
 <p align="center">
   <strong>A production-grade Jira-style Kanban board built with SolidJS</strong><br>
@@ -52,7 +52,7 @@
 
 ---
 
-## 🖼️ Screenshots
+## Screenshots
 
 <table>
   <tr>
