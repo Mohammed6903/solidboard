@@ -1,12 +1,12 @@
 <p align="center">
-  <img src="frontend/screenshots/board-view.png" alt="Kanban Board" width="100%">
+  <img src="frontend/public/images/tasks-lists-1.png" alt="SolidBoard Kanban Interface" width="100%" style="border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
 </p>
 
-<h1 align="center">SolidBoard - Modern Kanban Task Manager</h1>
+<h1 align="center">SolidBoard — High-Performance Kanban Task Manager</h1>
 
 <p align="center">
-  <strong>A production-grade Jira-style Kanban board built with SolidJS</strong><br>
-  <em>Showcasing reactive UI, custom drag-and-drop, real-time filtering, and modern design</em>
+  <strong>A production-grade, Jira-style Kanban board built with SolidJS & Express</strong><br>
+  <em>Showcasing fine-grained reactivity, custom drag-and-drop, real-time filtering, and modern glassmorphic design</em>
 </p>
 
 <p align="center">
@@ -14,209 +14,118 @@
   <img src="https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&logo=vite&logoColor=white" alt="Vite">
   <img src="https://img.shields.io/badge/Express.js-000000?style=for-the-badge&logo=express&logoColor=white" alt="Express">
   <img src="https://img.shields.io/badge/MongoDB-47A248?style=for-the-badge&logo=mongodb&logoColor=white" alt="MongoDB">
+  <img src="https://img.shields.io/badge/JWT-000000?style=for-the-badge&logo=json-web-tokens&logoColor=white" alt="JWT">
 </p>
 
 ---
 
-## Live Demo
+## 🚀 Why This Project? (Recruiter Highlights)
 
-![Application Demo](frontend/screenshots/demo.webp)
+This project demonstrates **Full-Stack Proficiency** and **Advanced Frontend Engineering** skills:
 
----
-
-## Key Features
-
-## **Smart Task Management**
-
-| Feature               | Description                                                                     |
-| --------------------- | ------------------------------------------------------------------------------- |
-| **Drag & Drop**       | Custom implementation without external libraries—smooth, performant, accessible |
-| **Smart Filtering**   | Real-time search with priority and custom tag filtering                         |
-| **Dynamic Tags**      | Auto-creating tagging system—type a new tag, it's instantly saved for reuse     |
-| **Rich Task Details** | Priority levels, due dates, assignees, comments, and custom tags                |
-
-## **Premium UI/UX Design**
-
-- **Glassmorphism** - Frosted glass effects with backdrop blur
-- **Gradient Accents** - Vibrant purple/indigo color palette
-- **Micro-animations** - Smooth hover states and transitions
-- **Dark Theme** - Eye-friendly interface for extended use
-- **Responsive** - Seamless experience from desktop to mobile
-
-## **Accessibility First**
-
-- Full keyboard navigation support
-- ARIA labels and live regions
-- Screen reader optimized
-- Focus management for modals
+1.  **High-Performance Architecture**: Leveraged **SolidJS** for O(1) fine-grained updates, eliminating the Virtual DOM overhead common in React apps.
+2.  **Complex State Management**: Implemented deep reactivity using Solid Stores (`createStore`) to handle nested board-column-task relationships seamlessly.
+3.  **Custom Interactive UI**: Built a performant **Drag-and-Drop** system from scratch using the native HTML5 Drag API (no heavy libraries like `react-beautiful-dnd`).
+4.  **Optimistic UI Updates**: Instant user feedback for actions like task movement and creation, syncing with the backend in the background.
+5.  **Robust Backend Design**: RESTful API with **Express/Mongoose** featuring relational data modeling, aggregation pipelines, and secure **JWT Authentication**.
 
 ---
 
-## Screenshots
+## 📸 Functionality Showcase
 
-<table>
-  <tr>
-    <td width="50%">
-      <img src="frontend/screenshots/boards-list.png" alt="Boards List">
-      <p align="center"><strong>Boards Dashboard</strong></p>
-    </td>
-    <td width="50%">
-      <img src="frontend/screenshots/board-view.png" alt="Board View">
-      <p align="center"><strong>Kanban Board View</strong></p>
-    </td>
-  </tr>
-</table>
+### **1. comprehensive Workspace Management**
+Manage multiple projects with a clean, grid-based dashboard. Each board tracks task counts and custom tags.
 
----
+<img src="frontend/public/images/board-lists-1.png" alt="Boards Dashboard" width="100%" style="border-radius: 8px; margin-bottom: 20px;">
 
-## Technical Highlights
+### **2. Powerful Filtering & Search**
+Instantly find tasks across columns using real-time search, priority filters, and tag selection.
 
-## Why SolidJS?
+<img src="frontend/public/images/tasks-list-1-with-filter.png" alt="Filtering Tasks" width="100%" style="border-radius: 8px; margin-bottom: 20px;">
 
-SolidJS was chosen for its fine-grained reactivity and exceptional performance. Unlike virtual DOM frameworks, SolidJS compiles to direct DOM updates—resulting in minimal overhead and blazing-fast rendering perfect for interactive applications like Kanban boards.
+### **3. Rich Task Details**
+Full-featured task editor with support for multi-color labels, due dates, priorities, and rich text descriptions.
 
-### **Custom Drag & Drop**
-
-Built a complete drag-and-drop system from scratch using native HTML5 Drag API:
-
-- No external dependencies (no dnd-kit, react-beautiful-dnd)
-- Keyboard-accessible drag operations
-- Visual feedback during drag states
-- Cross-column task movement with order preservation
-
-### **Smart Tag System**
-
-Innovative auto-creating tag system that improves UX:
-
-```
-User types "urgent" → System auto-creates and persists the tag
-Next task creation → "urgent" appears in suggestions dropdown
-```
-
-### **Architecture**
-
-```
-├── Components          Fine-grained reactive components
-├── Store               Centralized state with SolidJS signals
-├── Utils               Custom hooks and helpers
-│   ├── dragAndDrop     Custom drag state management
-│   ├── api             Mock API with localStorage persistence
-│   └── accessibility   Screen reader announcements
-└── Styles              CSS design system with variables
-```
+<img src="frontend/public/images/tasks-list-2.png" alt="Task Details" width="100%" style="border-radius: 8px;">
 
 ---
 
-## Quick Start
+## 🌟 Key Features
+
+### **Smart Task Management**
+| Feature | Description |
+| :--- | :--- |
+| **Drag & Drop** | Smooth, accessible drag operations for tasks and columns |
+| **Inline Editing** | Rename boards and tasks instantly without heavy modals |
+| **Smart Filtering** | Real-time filtering by text, priority, and tags |
+| **Dynamic Tags** | Auto-creating tag system — type to create, click to reuse |
+| **Due Date Tracking** | Visual indicators for upcoming and overdue deadlines |
+
+### **Premium UI/UX Design**
+- **Glassmorphism**: Modern frosted glass aesthetic with backdrop blur.
+- **Micro-animations**: Smooth transitions for hover states, modals, and drag operations.
+- **Responsive**: Fully optimized for Desktop, Tablet, and Mobile.
+- **Dark Mode**: Eye-friendly dark theme by default.
+
+---
+
+## 🛠 Tech Stack Details
+
+| Layer | Technology | Role |
+| :--- | :--- | :--- |
+| **Frontend** | **SolidJS** | Reactive UI framework (No VDOM) |
+| **State** | **Solid Stores** | deeply nested reactive state |
+| **Routing** | **@solidjs/router** | Client-side navigation |
+| **Build** | **Vite** | Next-gen bundler (HMR) |
+| **Backend** | **Express.js** | Scalable REST API |
+| **Database** | **MongoDB** | Flexible document storage |
+| **Auth** | **JWT + bcrypt** | Stateless, secure authentication |
+
+---
+
+## 🔧 Rapid Setup
 
 ```bash
-# Clone the repository
+# 1. Clone the repository
 git clone https://github.com/Mohammed6903/solidboard.git
 
-# Install dependencies
-cd solidboard/frontend
-npm install
+# 2. Install Dependencies (Root handles both)
+cd solidboard
+npm install && npm run install-all
 
-# Start development server
+# 3. Configure Environment
+cp frontend/.env.example frontend/.env
+cp server/.env.example server/.env
+
+# 4. Start Development (Concurrent Frontend + Backend)
 npm run dev
-
-# Open in browser
-open http://localhost:5173
 ```
 
 ---
 
-## Feature Checklist
-
-| Category   | Feature                                   | Status |
-| ---------- | ----------------------------------------- | ------ |
-| **Board**  | Multiple boards support                   | ✅     |
-| **Board**  | Create, edit, delete boards               | ✅     |
-| **Tasks**  | Drag & drop between columns               | ✅     |
-| **Tasks**  | Priority levels (Low → Urgent)            | ✅     |
-| **Tasks**  | Due date tracking with overdue indicators | ✅     |
-| **Tasks**  | Custom tags with auto-creation            | ✅     |
-| **Tasks**  | User assignment with avatars              | ✅     |
-| **Tasks**  | Comments system                           | ✅     |
-| **Filter** | Real-time text search                     | ✅     |
-| **Filter** | Priority filtering                        | ✅     |
-| **Filter** | Tag-based filtering                       | ✅     |
-| **UI**     | Glassmorphism design                      | ✅     |
-| **UI**     | Responsive layout                         | ✅     |
-| **UI**     | Dark theme                                | ✅     |
-| **A11y**   | Keyboard navigation                       | ✅     |
-| **A11y**   | Screen reader support                     | ✅     |
-
----
-
-## Tech Stack
-
-| Layer        | Technology      | Purpose                   |
-| ------------ | --------------- | ------------------------- |
-| **Frontend** | SolidJS         | Reactive UI framework     |
-| **Routing**  | @solidjs/router | Client-side navigation    |
-| **Build**    | Vite            | Fast dev server & bundler |
-| **Styling**  | CSS Variables   | Design token system       |
-| **Backend**  | Express.js      | REST API server           |
-| **Database** | MongoDB         | Document storage          |
-| **Auth**     | JWT + bcrypt    | Secure authentication     |
-
----
-
-## Project Structure
+## 📂 Project Structure
 
 ```
-solidJS/
+solidboard/
 ├── frontend/
 │   ├── src/
-│   │   ├── components/
-│   │   │   ├── common/        # Button, Avatar, Input, Modal
-│   │   │   ├── TaskCard/      # Draggable task card
-│   │   │   └── TaskModal/     # Task detail view
-│   │   ├── pages/
-│   │   │   ├── Landing.jsx    # Marketing page
-│   │   │   ├── BoardsListPage # Board dashboard
-│   │   │   └── BoardPage.jsx  # Kanban view
-│   │   ├── store/             # SolidJS signals
-│   │   ├── styles/            # CSS design system
-│   │   └── utils/             # Helpers & API
-│   └── screenshots/           # README assets
+│   │   ├── components/    # Reusable UI (TaskCard, Modal, etc.)
+│   │   ├── pages/         # Route Views (BoardPage, Landing)
+│   │   ├── store/         # Global Reactive Stores
+│   │   ├── styles/        # CSS Modules & Variables
+│   │   └── utils/         # API & Helper functions
+│   └── public/            # Static Assets
 │
-└── server/                    # Express API (optional)
-    ├── models/                # Mongoose schemas
-    ├── routes/                # API endpoints
-    └── middleware/            # Auth middleware
+└── server/
+    ├── models/            # Mongoose Schemas (User, Board, Task)
+    ├── routes/            # API Endpoints
+    └── controllers/       # Business Logic
 ```
-
----
-
-## Keyboard Shortcuts
-
-| Key               | Action                         |
-| ----------------- | ------------------------------ |
-| `Tab`             | Navigate between elements      |
-| `Enter` / `Space` | Open task or activate button   |
-| `Escape`          | Close modal or cancel form     |
-| Arrow Keys        | Navigate within dropdown menus |
-
----
-
-## What This Project Demonstrates
-
-1. **Modern Frontend Architecture** - Component-based design with clean separation of concerns
-2. **State Management** - Centralized reactive state using SolidJS signals
-3. **Custom Implementations** - Drag-and-drop built from scratch, not copied from tutorials
-4. **UI/UX Design Skills** - Premium glassmorphism design, thoughtful animations
-5. **Accessibility Awareness** - Keyboard navigation, ARIA labels, screen reader support
-6. **Clean Code** - Readable, maintainable, well-structured codebase
 
 ---
 
 ## License
-
 MIT License © 2026 Mohammed Usmani
-
----
 
 <p align="center">
   <strong>Built with ❤️ using SolidJS</strong><br>
