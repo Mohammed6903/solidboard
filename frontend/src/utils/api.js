@@ -77,6 +77,15 @@ export const boardApi = {
         return handleResponse(response);
     },
 
+    update: async (id, updates) => {
+        const response = await fetch(`${API_URL}/boards/${id}`, {
+            method: 'PUT',
+            headers: getHeaders(),
+            body: JSON.stringify(updates)
+        });
+        return handleResponse(response);
+    },
+
     delete: async (id) => {
         const response = await fetch(`${API_URL}/boards/${id}`, {
             method: 'DELETE',

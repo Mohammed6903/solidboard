@@ -108,32 +108,47 @@ export default function Landing() {
                     </div>
                 </div>
 
-                {/* Hero Visual — Floating Board Preview */}
+                {/* Hero Visual — Floating App Screenshot */}
                 <div class="hero__visual">
-                    <div class="hero__board-preview">
-                        <div class="hero__board-header">
-                            <div class="hero__board-dots">
-                                <span></span><span></span><span></span>
+                    <div class="hero__board-preview-img-wrapper">
+                        <img
+                            src="/images/tasks-lists-1.png"
+                            alt="SolidBoard Kanban Interface"
+                            class="hero__board-preview-img"
+                        />
+                    </div>
+                </div>
+            </section>
+
+            {/* Product Showcase Section */}
+            <section class="showcase" id="showcase" data-animate>
+                <div class={`showcase__inner ${visibleSections().has('showcase') ? 'visible' : ''}`}>
+                    <div class="showcase__header">
+                        <h2 class="features__title">Designing for efficiency</h2>
+                        <p class="features__subtitle">Clean, intuitive, and packed with features to help you ship faster.</p>
+                    </div>
+
+                    <div class="showcase__grid">
+                        <div class="showcase__item">
+                            <div class="showcase__image-container">
+                                <img src="/images/board-lists-1.png" alt="Board Management" loading="lazy" />
                             </div>
-                            <span class="hero__board-title-text">My Project Board</span>
+                            <h3>Manage Multiple Boards</h3>
+                            <p>Organize different projects in separate workspaces.</p>
                         </div>
-                        <div class="hero__board-columns">
-                            <div class="hero__board-col">
-                                <div class="hero__board-col-title" style="border-color: #818cf8;">To Do</div>
-                                <div class="hero__board-task hero__board-task--high">Design landing page</div>
-                                <div class="hero__board-task hero__board-task--medium">Setup CI/CD</div>
-                                <div class="hero__board-task hero__board-task--low">Write docs</div>
+                        <div class="showcase__item">
+                            <div class="showcase__image-container">
+                                <img src="/images/tasks-list-1-with-filter.png" alt="Filtering Tasks" loading="lazy" />
                             </div>
-                            <div class="hero__board-col">
-                                <div class="hero__board-col-title" style="border-color: #fbbf24;">In Progress</div>
-                                <div class="hero__board-task hero__board-task--urgent">Auth system</div>
-                                <div class="hero__board-task hero__board-task--high">API endpoints</div>
+                            <h3>Powerful Filtering</h3>
+                            <p>Find what you need instantly with tag and priority filters.</p>
+                        </div>
+                        <div class="showcase__item showcase__item--wide">
+                            <div class="showcase__image-container">
+                                <img src="/images/tasks-list-2.png" alt="Task Management" loading="lazy" />
                             </div>
-                            <div class="hero__board-col">
-                                <div class="hero__board-col-title" style="border-color: #34d399;">Done</div>
-                                <div class="hero__board-task hero__board-task--done">Project setup</div>
-                                <div class="hero__board-task hero__board-task--done">Database schema</div>
-                            </div>
+                            <h3>Rich Task Details</h3>
+                            <p>Add descriptions, due dates, labels, and subtasks (coming soon).</p>
                         </div>
                     </div>
                 </div>

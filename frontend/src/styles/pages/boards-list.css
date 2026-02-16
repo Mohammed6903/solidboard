@@ -116,29 +116,46 @@
     overflow: hidden;
 }
 
-.board-card__delete {
+.board-card__actions {
     position: absolute;
     top: 12px;
     right: 12px;
-    padding: 8px;
-    background: rgba(239, 68, 68, 0.1);
-    border: 1px solid rgba(239, 68, 68, 0.3);
-    border-radius: var(--radius-md);
-    color: #ef4444;
-    cursor: pointer;
+    display: flex;
+    gap: 6px;
     opacity: 0;
-    transition: all 0.2s;
+    transition: opacity 0.2s;
     z-index: 10;
 }
 
-.board-card__delete:hover {
-    background: rgba(239, 68, 68, 0.2);
-    border-color: #ef4444;
-    transform: scale(1.1);
+.board-card:hover .board-card__actions {
+    opacity: 1;
 }
 
-.board-card:hover .board-card__delete {
-    opacity: 1;
+.board-card__action-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: var(--radius-md);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.board-card__action-btn:hover {
+    background: rgba(99, 102, 241, 0.2);
+    border-color: var(--accent-primary);
+    color: var(--accent-primary);
+}
+
+.board-card__action-btn--danger:hover {
+    background: rgba(239, 68, 68, 0.2);
+    border-color: #ef4444;
+    color: #ef4444;
 }
 
 .board-card:hover {
@@ -155,6 +172,20 @@
 .board-card--create:hover {
     background: rgba(255, 255, 255, 0.05);
     transform: none;
+}
+
+.board-rename-input {
+    width: 100%;
+    padding: 6px 10px;
+    font-size: var(--font-size-lg);
+    font-weight: 600;
+    color: var(--text-primary);
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--accent-primary);
+    border-radius: var(--radius-md);
+    outline: none;
+    font-family: inherit;
+    margin-bottom: var(--space-sm);
 }
 
 .board-title {
@@ -383,7 +414,7 @@
         padding: var(--space-lg);
     }
 
-    .board-card__delete {
+    .board-card__actions {
         opacity: 1;
     }
 

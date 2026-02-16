@@ -36,6 +36,10 @@ export default function BoardPage() {
 
     let taskInputRef;
 
+    // Board rename state
+    const [editingBoardTitle, setEditingBoardTitle] = createSignal(false);
+    const [boardTitleValue, setBoardTitleValue] = createSignal('');
+
     // Column management state
     const [editingColumnId, setEditingColumnId] = createSignal(null);
     const [editingColumnTitle, setEditingColumnTitle] = createSignal('');
@@ -438,9 +442,55 @@ export default function BoardPage() {
                         <span>Boards</span>
                     </button>
                     <span class="board-header__divider"></span>
-                    <h1 class="board-header__title">
-                        {board()?.title || 'Loading...'}
-                    </h1>
+                    <Show when={editingBoardTitle()} fallback={
+                        <h1
+                            class="board-header__title board-header__title--editable"
+                            onDblClick={() => {
+                                setBoardTitleValue(board()?.title || '');
+                                setEditingBoardTitle(true);
+                            }}
+                            title="Double-click to rename"
+                        >
+                            {board()?.title || 'Loading...'}
+                        </h1>
+                    }>
+                        <input
+                            class="board-header__title-input"
+                            value={boardTitleValue()}
+                            onInput={(e) => setBoardTitleValue(e.target.value)}
+                            onKeyDown={async (e) => {
+                                if (e.key === 'Enter') {
+                                    const newTitle = boardTitleValue().trim();
+                                    if (newTitle && newTitle !== board()?.title) {
+                                        try {
+                                            await boardApi.update(board()._id || board().id, { title: newTitle });
+                                            setBoard({ ...board(), title: newTitle });
+                                            announce(`Board renamed to "${newTitle}"`);
+                                        } catch (err) {
+                                            console.error('Failed to rename board:', err);
+                                        }
+                                    }
+                                    setEditingBoardTitle(false);
+                                } else if (e.key === 'Escape') {
+                                    setEditingBoardTitle(false);
+                                }
+                            }}
+                            onBlur={async () => {
+                                const newTitle = boardTitleValue().trim();
+                                if (newTitle && newTitle !== board()?.title) {
+                                    try {
+                                        await boardApi.update(board()._id || board().id, { title: newTitle });
+                                        setBoard({ ...board(), title: newTitle });
+                                    } catch (err) {
+                                        console.error('Failed to rename board:', err);
+                                    }
+                                }
+                                setEditingBoardTitle(false);
+                            }}
+                            ref={(el) => setTimeout(() => el?.focus(), 0)}
+                            autofocus
+                        />
+                    </Show>
                 </div>
 
                 <div class="board-header__right">

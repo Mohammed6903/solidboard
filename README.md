@@ -71,7 +71,7 @@
 
 ## Technical Highlights
 
-## Why SolidJS?\*\*
+## Why SolidJS?
 
 SolidJS was chosen for its fine-grained reactivity and exceptional performance. Unlike virtual DOM frameworks, SolidJS compiles to direct DOM updates—resulting in minimal overhead and blazing-fast rendering perfect for interactive applications like Kanban boards.
 
