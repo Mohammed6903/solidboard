@@ -19,7 +19,7 @@
 
 ---
 
-## 🚀 Why This Project? (Recruiter Highlights)
+## Why This Project?
 
 This project demonstrates **Full-Stack Proficiency** and **Advanced Frontend Engineering** skills:
 
@@ -31,7 +31,7 @@ This project demonstrates **Full-Stack Proficiency** and **Advanced Frontend Eng
 
 ---
 
-## 📸 Functionality Showcase
+## Functionality Showcase
 
 ### **1. comprehensive Workspace Management**
 Manage multiple projects with a clean, grid-based dashboard. Each board tracks task counts and custom tags.
@@ -50,7 +50,7 @@ Full-featured task editor with support for multi-color labels, due dates, priori
 
 ---
 
-## 🌟 Key Features
+## Key Features
 
 ### **Smart Task Management**
 | Feature | Description |
@@ -69,7 +69,7 @@ Full-featured task editor with support for multi-color labels, due dates, priori
 
 ---
 
-## 🛠 Tech Stack Details
+## Tech Stack Details
 
 | Layer | Technology | Role |
 | :--- | :--- | :--- |
@@ -83,7 +83,7 @@ Full-featured task editor with support for multi-color labels, due dates, priori
 
 ---
 
-## 🔧 Rapid Setup
+## Rapid Setup
 
 ```bash
 # 1. Clone the repository
@@ -103,7 +103,7 @@ npm run dev
 
 ---
 
-## 📂 Project Structure
+## Project Structure
 
 ```
 solidboard/
